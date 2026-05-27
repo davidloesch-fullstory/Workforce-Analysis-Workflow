@@ -333,7 +333,70 @@ Sort all candidates across all teams by:
 2. Implementation complexity (secondary — ascending)
 3. Automation level (tertiary — Fully Automated first)
 
-### 3.4 Backfill Metric Ledger
+### 3.4 Validate Key Metrics
+
+Before presenting results, cross-check the **primary signal metrics**
+(the ones that drive time estimates) against known baselines in the org.
+
+**Step 1: Identify validation candidates**
+
+Any metric that is a primary signal for an automation candidate (i.e., the
+metric whose volume feeds directly into the hours-saved estimate) MUST be
+validated. Supporting/context metrics are lower priority but should be
+spot-checked.
+
+**Step 2: Search for existing org metrics**
+
+```
+get_metric(regex="{signal_keyword}")
+```
+
+For each primary signal, search for named metrics the org may already
+track (e.g., "ticket volume", "reply count"). If the org has existing
+metrics, compare:
+
+- The agent's computed value vs the org's existing metric value
+- The query scope (what's included/excluded)
+- The time range (exact date boundaries)
+
+**Step 3: Investigate divergences**
+
+If a metric diverges >20% from a known org baseline:
+
+1. **Check time range alignment** — "last 30 days" is ambiguous. Confirm
+   exact start/end dates match.
+2. **Check event counting method** — is the org counting unique sessions
+   with the event, or total event occurrences? These can differ 3-5x.
+3. **Check filter scope** — does the org's metric filter by user segment,
+   page, or other conditions the agent's query doesn't include?
+4. **Rebuild if needed** — if the divergence is explained by scope
+   differences, adjust the agent's query to match or document the
+   difference explicitly.
+
+**Step 4: Record validation status**
+
+For each primary signal metric, record in the ledger (or in working notes
+if ledger is disabled):
+
+| Metric | Agent Value | Org Baseline | Delta | Explanation | Status |
+|--------|-------------|-------------|-------|-------------|--------|
+| {name} | {value} | {org_value} or N/A | {%} | {why different} | Validated / Adjusted / Flagged |
+
+Metrics with status "Flagged" must be called out in the deliverable with
+a note explaining the discrepancy and what the number represents.
+
+**Step 5: Adjust estimates if needed**
+
+If validation reveals the agent's metric was overcounting (e.g., including
+bot traffic, test users, or duplicate events), recalculate the hours-saved
+estimate with the corrected number. Re-rank if the ordering changes.
+
+**Important**: The goal is NOT to make numbers match perfectly — it's to
+understand and explain any differences. A transparent explanation of "our
+metric counts X while your dashboard counts Y because of Z" is far more
+credible than numbers that don't reconcile.
+
+### 3.5 Backfill Metric Ledger
 
 If metric persistence is enabled (Phase 0.5), go back through the ledger
 and fill in the "Blueprint Role" and "Significance" columns now that
@@ -349,7 +412,7 @@ automation candidates are identified. Each metric should be tagged with:
 Also add a suggested dashboard name for each metric:
 `[{prefix}] {Signal Name}` — e.g., `[WFA-Acme-2026-05] Copied Comment Log`
 
-### 3.5 Build Implementation Roadmap (per team)
+### 3.6 Build Implementation Roadmap (per team)
 
 Group candidates into phases:
 - **Phase 1 — Quick Wins**: Fully Automated items with low implementation
@@ -373,8 +436,9 @@ they map to the teams the user confirmed in Phase 0.5.
 
 **Tab order**:
 1. Overview (always present, always first)
-2. One tab per confirmed team, using the exact name the user provided
-3. Measurement & Proof (always present, always last)
+2. Methodology (always present, always second)
+3. One tab per confirmed team, using the exact name the user provided
+4. Measurement & Proof (always present, always last)
 
 **Team accent colors** assigned by tab order:
 - Team 1: purple (#6c5ce7, #a29bfe)
@@ -395,6 +459,54 @@ they map to the teams the user confirmed in Phase 0.5.
 - "Key Moments" section: 8–10 curated session replay links with
   timestamps and descriptions
 
+**Methodology Tab** (always present, second tab):
+
+A concise, customer-facing explanation of how the analysis works. This
+tab exists so any stakeholder can understand and challenge the approach.
+
+Contents:
+
+- **How This Analysis Works**: 4-step visual summary
+  1. We measured what tools your team uses and how much time they spend
+     (FullStory Workforce captures every page view, click, and interaction)
+  2. We watched real employee sessions to observe manual workflows
+     (session replays — not surveys, not interviews, actual behavior)
+  3. We identified repetitive patterns that a machine could handle
+     (matching quantitative signals to qualitative observations)
+  4. We estimated impact using conservative assumptions you can verify
+     (every number traces back to a specific metric and formula)
+
+- **The Estimation Formula**: Show the formula visually:
+  `Monthly Hours Saved = Events/Month × Minutes/Event × Eliminability% ÷ 60`
+  With a plain-English explanation of each variable.
+
+- **Where the Numbers Come From**: Table explaining each input source:
+
+  | Input | Source | How to Verify |
+  |-------|--------|---------------|
+  | Event volume | FullStory metric (linked) | Click the metric link in any candidate's audit trail |
+  | Time per event | Session replay observation or conservative default | Watch the linked session replay at the cited timestamp |
+  | Eliminability % | Based on automation type + workflow characteristics | See rationale in each candidate's audit trail |
+
+- **Conservative by Design**: Callout explaining that estimates use
+  conservative defaults, round down, and apply modest eliminability
+  percentages. The goal is a floor estimate a skeptic would accept.
+
+- **Validation Status**: Summary of Phase 3.4 validation results:
+  - How many metrics were cross-checked against existing org metrics
+  - How many matched within 20%
+  - Any flagged discrepancies with explanations
+  - Statement: "Every primary signal metric that drives an hours-saved
+    estimate has been validated or its limitations are documented."
+
+- **How to Challenge a Number**: Step-by-step guide for stakeholders:
+  1. Find the candidate card for the opportunity in question
+  2. Expand "How We Got Here" to see the full audit trail
+  3. Check the metric link — does the FullStory metric match?
+  4. Check the session replay — does the observed behavior match?
+  5. Check the formula — do the inputs and math check out?
+  6. If any input is wrong, recalculate with the corrected value
+
 **Per-Team Blueprint Tabs** (one per user-confirmed team):
 - Tab label = the exact team name the user confirmed in Phase 0.5
 - Executive callout with key numbers
@@ -406,9 +518,42 @@ they map to the teams the user confirmed in Phase 0.5.
   - Current state → future state description
   - Session evidence block
   - "Watch It Happen" evidence clips with timestamped FullStory links
+  - **"How We Got Here" expandable audit trail** (see below)
 - Automation impact summary table
 - Implementation roadmap (phased)
 - Session replay links section
+
+**Candidate Card Audit Trail** (expandable section per card):
+
+Each automation candidate card includes a collapsible "How We Got Here"
+section that makes every number traceable. This is critical for customer
+credibility — any number in the deliverable must be auditable back to
+its source. The audit trail contains:
+
+1. **Signal Metrics Table**: Each metric that feeds this candidate, with:
+   - Signal name
+   - Exact MCP query used to build it (verbatim `build_metric` query string)
+   - Output type (single_number, top_n)
+   - Computed value
+   - Validation status (Validated / Adjusted / Flagged — from Phase 3.4)
+   - If Flagged: explanation of discrepancy
+
+2. **Time-per-Event Justification**:
+   - Source: "Session-observed" (with session URL + timestamp) or
+     "Default estimate" (with rubric reference)
+   - If session-observed: which session, what timestamp range, what was
+     happening, how many repetitions were timed
+   - The specific value used (e.g., "3 min per copy-paste cycle")
+
+3. **Eliminability Rationale**:
+   - The percentage used (e.g., 60%)
+   - Why this percentage and not higher/lower
+   - Automation level classification justification
+
+4. **Full Calculation**:
+   - Show the complete formula with all values plugged in:
+     `{volume} events × {time} min × {eliminability}% ÷ 60 = {hours} hrs/month`
+   - If multiple signals are summed, show each sub-calculation and the total
 
 **Measurement & Proof Tab** (always present as the last tab):
 - **Baseline Metrics Table**: All key signal metrics with:
