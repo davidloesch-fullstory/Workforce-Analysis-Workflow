@@ -1,0 +1,878 @@
+<!--
+  FullStory Workforce Automation Analysis — Report Template
+  
+  This is the HTML/CSS/JS shell for the deliverable. The agent fills in
+  actual data from Phases 1-3 where placeholders appear.
+  
+  Placeholders use the format: {PLACEHOLDER_NAME}
+  Repeating sections use the format: {REPEAT:section_name} ... {/REPEAT}
+  
+  The CSS below is complete and should be used as-is. The HTML structure
+  shows the expected components for each section.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FullStory Workforce Automation Analysis</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-alt: #f7f8fa;
+    --text: #1a1a2e;
+    --text-secondary: #64748b;
+    --border: #e2e8f0;
+    --accent: #6c5ce7;
+    --accent-light: #f0eeff;
+    --success: #10b981;
+    --success-bg: #ecfdf5;
+    --warning: #f59e0b;
+    --warning-bg: #fffbeb;
+    --danger: #ef4444;
+    --danger-bg: #fef2f2;
+    --info: #3b82f6;
+    --info-bg: #eff6ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: var(--text);
+    background: var(--bg-alt);
+    line-height: 1.6;
+  }
+
+  /* Tab Navigation */
+  .tab-bar {
+    position: sticky; top: 0; z-index: 100; background: white;
+    display: flex; justify-content: center;
+    border-bottom: 1px solid var(--border); padding: 0 16px;
+  }
+  .tab {
+    padding: 14px 24px; font-size: 14px; font-weight: 500;
+    color: var(--text-secondary); background: none; border: none;
+    border-bottom: 3px solid transparent; cursor: pointer;
+    transition: color 0.15s, border-color 0.15s; font-family: inherit;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  .section-nav { padding: 16px 0 0; }
+  .section-nav button {
+    background: none; border: none; color: var(--accent);
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    font-family: inherit; padding: 6px 0;
+  }
+  .section-nav button:hover { text-decoration: underline; }
+
+  /* Section containers */
+  .report-container { max-width: 1100px; margin: 0 auto; padding: 40px 32px 80px; background: var(--bg); }
+  .container { max-width: 1200px; margin: 0 auto; padding: 40px 32px 80px; }
+
+  /* Typography */
+  h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+  h2 { font-size: 22px; font-weight: 600; margin: 32px 0 12px; color: var(--text); }
+  h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+  .subtitle { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+  .section-subtitle { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+  /* Hero (Overview tab) */
+  .hero {
+    background: linear-gradient(135deg, #1a1a2e 0%, #2d2b55 50%, #6c5ce7 100%);
+    color: white; padding: 60px 32px 48px; text-align: center;
+  }
+  .hero h1 { font-size: 36px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; }
+  .hero .tagline { font-size: 18px; opacity: 0.85; margin-bottom: 24px; font-weight: 400; }
+  .hero-stats { display: flex; justify-content: center; gap: 48px; margin-top: 32px; }
+  .hero-stat { text-align: center; }
+  .hero-stat-value { font-size: 42px; font-weight: 800; line-height: 1; }
+  .hero-stat-label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; margin-top: 6px; }
+
+  /* Pitch Cards (Overview tab) */
+  .cards-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin: 24px 0; }
+  .pitch-card {
+    background: white; border: 1px solid var(--border); border-radius: 14px;
+    overflow: hidden; transition: transform 0.2s, box-shadow 0.2s;
+    text-decoration: none; color: inherit; display: flex; flex-direction: column;
+  }
+  .pitch-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(108, 92, 231, 0.15); }
+  .pitch-card-accent { height: 6px; width: 100%; }
+  .pitch-card-body { padding: 24px; flex: 1; display: flex; flex-direction: column; }
+  .pitch-card-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; margin-bottom: 16px;
+  }
+  .pitch-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+  .pitch-card p { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 16px; flex: 1; }
+  .pitch-card-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .pitch-card-stat { background: var(--bg-alt); border-radius: 8px; padding: 10px; text-align: center; }
+  .pitch-card-stat-value { font-size: 20px; font-weight: 700; line-height: 1.2; }
+  .pitch-card-stat-label { font-size: 10px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.3px; }
+  .pitch-card-cta {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 10px 16px; background: var(--bg-alt); border-radius: 8px;
+    font-size: 13px; font-weight: 600; color: var(--accent); transition: background 0.15s;
+  }
+  .pitch-card:hover .pitch-card-cta { background: var(--accent-light); }
+  .pitch-card-cta::after { content: "\2192"; }
+
+  /* Summary Bar */
+  .summary-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 24px 0; }
+  .summary-bar-item { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 20px; text-align: center; }
+  .summary-bar-value { font-size: 32px; font-weight: 800; line-height: 1; }
+  .summary-bar-label { font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 6px; }
+  .summary-bar-detail { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+
+  /* Key Moments */
+  .moments-list { margin: 16px 0; }
+  .moment-item {
+    display: flex; align-items: flex-start; gap: 16px; padding: 14px 16px;
+    background: white; border: 1px solid var(--border); border-radius: 8px; margin: 8px 0;
+    transition: border-color 0.15s, box-shadow 0.15s; text-decoration: none; color: inherit;
+  }
+  .moment-item:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(108, 92, 231, 0.1); }
+  .moment-num {
+    display: flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--accent); color: white; font-size: 12px; font-weight: 700;
+    flex-shrink: 0; margin-top: 2px;
+  }
+  .moment-body { flex: 1; }
+  .moment-desc { font-size: 13px; font-weight: 600; line-height: 1.4; margin-bottom: 4px; }
+  .moment-meta { font-size: 11px; color: var(--text-secondary); }
+  .moment-meta .ts { font-weight: 700; color: var(--accent); }
+  .moment-cta { font-size: 12px; color: var(--accent); font-weight: 600; flex-shrink: 0; margin-top: 6px; white-space: nowrap; }
+
+  /* Ranked Table */
+  .rank-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--bg-alt); font-weight: 700; font-size: 12px; color: var(--text-secondary);
+  }
+  .rank-num.top3 { background: var(--accent); color: white; }
+  .link-arrow {
+    display: inline-flex; align-items: center; gap: 4px;
+    color: var(--accent); font-size: 12px; font-weight: 600; text-decoration: none; white-space: nowrap;
+  }
+  .link-arrow:hover { text-decoration: underline; }
+  .link-arrow::after { content: "\2192"; }
+  .tools-list { font-size: 12px; color: var(--text-secondary); }
+  .total-row td { background: var(--bg-alt); font-weight: 700; border-top: 2px solid var(--border); }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0; }
+  th {
+    text-align: left; padding: 10px 12px; background: var(--bg-alt);
+    border-bottom: 2px solid var(--border); font-weight: 600; font-size: 12px;
+    text-transform: uppercase; letter-spacing: 0.3px; color: var(--text-secondary);
+  }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  tr.row-success td { background: var(--success-bg); }
+  tr.row-warning td { background: var(--warning-bg); }
+  #section-overview table {
+    background: white; border-radius: 10px; overflow: hidden; border: 1px solid var(--border);
+  }
+  #section-overview th { padding: 12px 14px; font-size: 11px; letter-spacing: 0.4px; white-space: nowrap; }
+  #section-overview td { padding: 12px 14px; vertical-align: middle; }
+  #section-overview tr:last-child td { border-bottom: none; }
+  #section-overview tr:hover td { background: #fafbff; }
+  td.hours { font-weight: 700; font-size: 14px; }
+
+  /* Callouts */
+  .callout { padding: 16px 20px; border-radius: 8px; font-size: 14px; line-height: 1.5; margin: 16px 0; }
+  .callout-info { background: var(--info-bg); border-left: 4px solid var(--info); }
+  .callout-warning { background: var(--warning-bg); border-left: 4px solid var(--warning); }
+  .callout strong { font-weight: 700; }
+
+  /* Stat Grids */
+  .stats-grid { display: grid; gap: 12px; margin: 16px 0; }
+  .stats-5 { grid-template-columns: repeat(5, 1fr); }
+  .stats-4 { grid-template-columns: repeat(4, 1fr); }
+  .stats-3 { grid-template-columns: repeat(3, 1fr); }
+  .stats-2 { grid-template-columns: repeat(2, 1fr); }
+  .stat { text-align: center; padding: 16px 12px; background: var(--bg-alt); border-radius: 8px; border: 1px solid var(--border); }
+  .stat-value { font-size: 28px; font-weight: 700; line-height: 1.2; }
+  .stat-label { font-size: 12px; color: var(--text-secondary); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-success .stat-value { color: var(--success); }
+  .stat-warning .stat-value { color: var(--warning); }
+  .stat-danger .stat-value { color: var(--danger); }
+  .stat-info .stat-value { color: var(--info); }
+
+  /* Layout */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 16px 0; }
+  .chart-container { margin: 12px 0; }
+  .chart-source { font-size: 11px; color: var(--text-secondary); margin-bottom: 8px; }
+
+  /* Cards */
+  .card { border: 1px solid var(--border); border-radius: 10px; margin: 16px 0; overflow: hidden; }
+  .card-header {
+    padding: 14px 20px; background: var(--bg-alt); border-bottom: 1px solid var(--border);
+    font-weight: 600; font-size: 15px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .card-body { padding: 20px; }
+
+  /* Pills */
+  .pill {
+    display: inline-block; padding: 3px 10px; border-radius: 12px;
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap;
+  }
+  .pill-success { background: var(--success-bg); color: #065f46; }
+  .pill-info { background: var(--info-bg); color: #1e40af; }
+  .pill-warning { background: var(--warning-bg); color: #92400e; }
+  .pill-neutral { background: var(--bg-alt); color: var(--text-secondary); }
+
+  /* Automation Candidate Cards */
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px; }
+  .detail-label { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+  .detail-value { font-size: 13px; color: var(--text-secondary); }
+  .future-state { font-size: 13px; line-height: 1.5; }
+  .evidence {
+    margin-top: 8px; padding: 10px 14px; background: var(--bg-alt); border-radius: 6px;
+    font-size: 12px; color: var(--text-secondary); line-height: 1.5;
+  }
+  .evidence-label { font-weight: 600; color: var(--text); font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 2px; }
+
+  /* Roadmap Cards */
+  .roadmap-card { margin: 12px 0; }
+  .roadmap-card .card-body p { font-size: 14px; line-height: 1.6; margin-bottom: 12px; }
+
+  /* Bar Charts */
+  .bar-row { display: flex; align-items: center; margin: 6px 0; }
+  .bar-label { width: 160px; font-size: 12px; flex-shrink: 0; text-align: right; padding-right: 12px; color: var(--text-secondary); }
+  .bar-track { flex: 1; height: 24px; background: var(--bg-alt); border-radius: 4px; position: relative; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 8px; transition: width 0.3s; }
+  .bar-val { font-size: 11px; font-weight: 600; color: white; white-space: nowrap; }
+  .bar-val-outside { font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-left: 8px; white-space: nowrap; }
+
+  /* Donut Charts */
+  .donut-container { display: flex; justify-content: center; align-items: center; flex-direction: column; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 12px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* Session Links */
+  .session-links { margin: 16px 0; }
+  .session-links a {
+    display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px;
+    background: var(--bg-alt); border: 1px solid var(--border); border-radius: 6px;
+    color: var(--accent); font-size: 13px; font-weight: 500; text-decoration: none;
+    margin: 4px 8px 4px 0; transition: background 0.15s, border-color 0.15s;
+  }
+  .session-links a:hover { background: #f0eeff; border-color: var(--accent); }
+  .session-links a::before { content: "\25B6"; font-size: 10px; }
+
+  /* Evidence Clips */
+  .evidence-clips {
+    margin-top: 12px; padding: 12px 14px; background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 6px;
+  }
+  .evidence-clips .evidence-label { margin-bottom: 8px; }
+  .evidence-clips a {
+    display: block; padding: 5px 0; color: var(--accent); font-size: 12px;
+    font-weight: 500; text-decoration: none; line-height: 1.4;
+  }
+  .evidence-clips a:hover { text-decoration: underline; }
+  .evidence-clips .ts { font-weight: 700; color: var(--text); margin-right: 4px; }
+
+  /* Session Deep Dive Cards */
+  .session-card { margin: 12px 0; }
+  .session-card .card-header .pills { display: flex; gap: 6px; }
+
+  /* Footer */
+  .footer { margin-top: 40px; font-size: 11px; color: var(--text-secondary); line-height: 1.5; }
+  #section-overview .footer { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border); text-align: center; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .cards-grid { grid-template-columns: 1fr; }
+    .hero-stats { flex-direction: column; gap: 16px; }
+    .summary-bar { grid-template-columns: 1fr; }
+    .tab-bar { flex-wrap: wrap; }
+    .tab { padding: 10px 16px; font-size: 13px; }
+  }
+  @media (max-width: 768px) {
+    .two-col, .detail-grid { grid-template-columns: 1fr; }
+    .stats-4, .stats-5 { grid-template-columns: repeat(2, 1fr); }
+    .stats-3 { grid-template-columns: repeat(2, 1fr); }
+    .bar-label { width: 120px; font-size: 11px; }
+  }
+  @media print {
+    body { background: white; }
+    .tab-bar { display: none; }
+    .section-nav { display: none; }
+    .section { display: block !important; }
+    .hero { padding: 30px 20px 24px; }
+    .container, .report-container { padding: 20px; max-width: 100%; }
+    .pitch-card { break-inside: avoid; }
+    .pitch-card:hover { transform: none; box-shadow: none; }
+    .card { break-inside: avoid; }
+    .stats-grid { break-inside: avoid; }
+    table { break-inside: avoid; }
+    h2 { break-after: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<!--
+  TAB BAR
+  Tabs are NOT hardcoded — they are built dynamically from the teams
+  the user confirmed in Phase 0.5.
+
+  Tab order:
+    1. Overview (always first)
+    2. One tab per confirmed team, using exact user-provided name
+    3. Measurement & Proof (always last)
+
+  Team accent colors assigned by tab order:
+    Team 1: purple (#6c5ce7, #a29bfe)
+    Team 2: blue (#3b82f6, #60a5fa)
+    Team 3: green (#10b981, #34d399)
+    Team 4: amber (#f59e0b, #fbbf24)
+    Team 5+: cycle from beginning
+-->
+<div class="tab-bar">
+  <button class="tab active" data-tab="overview" onclick="switchTab('overview')">Overview</button>
+  <!-- {REPEAT:team_tab} — use exact team name from Phase 0.5 -->
+  <button class="tab" data-tab="{team_id}" onclick="switchTab('{team_id}')">{team_label}</button>
+  <!-- {/REPEAT} -->
+  <button class="tab" data-tab="measurement" onclick="switchTab('measurement')">Measurement &amp; Proof</button>
+</div>
+
+<!-- ============================================================
+     OVERVIEW SECTION
+     ============================================================ -->
+<div id="section-overview" class="section">
+
+<div class="hero">
+  <h1>Workforce Automation Opportunities</h1>
+  <p class="tagline">FullStory Workforce Analysis &mdash; {team_count} Business Units, {total_workflows} Automation Candidates</p>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="hero-stat-value">~{total_hours_saved}</div>
+      <div class="hero-stat-label">Hours Saved / Month</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-value">~{fte_equivalent}</div>
+      <div class="hero-stat-label">FTE Equivalent</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-value">{total_workflows}</div>
+      <div class="hero-stat-label">Automation Workflows</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-value">{session_count}</div>
+      <div class="hero-stat-label">Session Deep Dives</div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<h2>Automation Blueprints</h2>
+<p class="section-subtitle">Each blueprint contains quantitative FullStory Workforce data, session deep dives, automation candidates, and implementation roadmaps. Click to view the full report.</p>
+
+<div class="cards-grid">
+  <!--
+    {REPEAT:team_card}
+    One pitch card per team. Adapt colors per team:
+      - Use card-accent-* classes with custom gradient backgrounds
+      - Use icon-* classes with appropriate background colors
+      - Choose appropriate emoji for the icon
+      - Link via switchTab('{team_id}')
+  -->
+  <a href="#" onclick="switchTab('{team_id}'); return false;" class="pitch-card">
+    <div class="pitch-card-accent" style="background: linear-gradient(90deg, {team_color_start}, {team_color_end})"></div>
+    <div class="pitch-card-body">
+      <div class="pitch-card-icon" style="background: {team_icon_bg}">{team_emoji}</div>
+      <h3>{team_name}</h3>
+      <p>{team_description}</p>
+      <div class="pitch-card-stats">
+        <div class="pitch-card-stat"><div class="pitch-card-stat-value" style="color:{team_color_start}">~{team_hours}h</div><div class="pitch-card-stat-label">Monthly Savings</div></div>
+        <div class="pitch-card-stat"><div class="pitch-card-stat-value">{team_workflow_count}</div><div class="pitch-card-stat-label">Workflows</div></div>
+      </div>
+      <div class="pitch-card-cta">View Full Blueprint</div>
+    </div>
+  </a>
+  <!-- {/REPEAT} -->
+</div>
+
+<!-- Automation Level Summary Bar -->
+<div class="summary-bar">
+  <div class="summary-bar-item">
+    <div class="summary-bar-value" style="color:var(--success)">{fully_automated_count}</div>
+    <div class="summary-bar-label">Fully Automated</div>
+    <div class="summary-bar-detail">~{fully_automated_hours} hrs/month &mdash; zero human intervention</div>
+  </div>
+  <div class="summary-bar-item">
+    <div class="summary-bar-value" style="color:var(--info)">{ai_assisted_count}</div>
+    <div class="summary-bar-label">AI-Assisted</div>
+    <div class="summary-bar-detail">~{ai_assisted_hours} hrs/month &mdash; AI drafts, humans approve</div>
+  </div>
+  <div class="summary-bar-item">
+    <div class="summary-bar-value" style="color:var(--warning)">{process_automated_count}</div>
+    <div class="summary-bar-label">Process Automated</div>
+    <div class="summary-bar-detail">~{process_automated_hours} hrs/month &mdash; smart routing &amp; data consolidation</div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- Ranked Table of All Automation Opportunities -->
+<h2>All Automation Opportunities &mdash; Ranked by Impact</h2>
+<p class="section-subtitle">{total_workflows} candidate workflows across {team_count} teams, ranked by estimated monthly hours saved.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:36px">#</th>
+      <th>Proposal</th>
+      <th>Candidate Workflow</th>
+      <th>Automation Level</th>
+      <th style="text-align:right">Hours Saved/Mo</th>
+      <th>Primary Tools</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!--
+      {REPEAT:ranked_row}
+      One row per automation candidate, sorted by hours saved descending.
+      Use rank-num.top3 class for ranks 1-3.
+      Use pill-{team_id} class for the proposal pill.
+      Link via switchTab('{team_id}', '{candidate_anchor_id}')
+    -->
+    <tr>
+      <td><span class="rank-num {top3_class}">{rank}</span></td>
+      <td><span class="pill pill-{team_id}">{team_label}</span></td>
+      <td>{workflow_name}</td>
+      <td><span class="pill pill-{level_class}">{automation_level}</span></td>
+      <td class="hours" style="text-align:right">{hours_saved}</td>
+      <td class="tools-list">{primary_tools}</td>
+      <td><a href="#" onclick="switchTab('{team_id}', '{candidate_anchor_id}'); return false;" class="link-arrow">View</a></td>
+    </tr>
+    <!-- {/REPEAT} -->
+    <tr class="total-row">
+      <td></td>
+      <td>{team_count} Teams</td>
+      <td>Total</td>
+      <td>{total_workflows} Workflows</td>
+      <td class="hours" style="text-align:right;color:var(--success)">{total_hours_saved}</td>
+      <td class="tools-list">{total_tools_count} Tools</td>
+      <td></td>
+    </tr>
+  </tbody>
+</table>
+
+<hr class="divider">
+
+<!-- Key Moments — curated session replay highlights -->
+<h2>Key Moments &mdash; See the Problem Firsthand</h2>
+<p class="section-subtitle">The most compelling moments from {session_count} session replays. Each link opens a FullStory session replay.</p>
+
+<div class="moments-list">
+  <!--
+    {REPEAT:key_moment}
+    8-10 curated moments from across all teams.
+    Select the most visually compelling friction points.
+  -->
+  <a href="{session_url}" target="_blank" class="moment-item">
+    <div class="moment-num">{moment_number}</div>
+    <div class="moment-body">
+      <div class="moment-desc">{moment_description}</div>
+      <div class="moment-meta"><span class="ts">&#9654; Skip to {timestamp}</span><span class="moment-team"> &bull; <span class="pill pill-{team_id}">{team_label}</span> &bull; {workflow_name}</span></div>
+    </div>
+    <div class="moment-cta">Watch &rarr;</div>
+  </a>
+  <!-- {/REPEAT} -->
+</div>
+
+<hr class="divider">
+
+<p class="footer">
+  <strong>FullStory Workforce Automation Analysis</strong> &mdash; Org {org_id} &mdash; {date_range}<br>
+  {total_page_views} total page views analyzed &bull; {session_count} session deep dives &bull; ~{total_observed_hours} hours of observed employee behavior<br><br>
+  Prepared by FullStory Solutions Engineering
+</p>
+
+</div>
+</div>
+
+<!-- ============================================================
+     TEAM BLUEPRINT SECTIONS
+     Generate one section per team analyzed.
+     ============================================================ -->
+<!--
+  {REPEAT:team_section}
+  Each team section follows this structure. Adapt content to the
+  specific tools and workflows discovered for each team.
+-->
+<div id="section-{team_id}" class="section" style="display:none">
+<div class="report-container">
+
+<div class="section-nav"><button onclick="switchTab('overview')">&larr; Back to Overview</button></div>
+
+<h1>{team_name} Automation Blueprint</h1>
+<p class="subtitle">FullStory Workforce Data &mdash; {time_range} &mdash; {tools_analyzed} + {session_count_team} Session Deep Dives</p>
+
+<!-- Executive Callout -->
+<div class="callout callout-info">
+  {executive_summary_html}
+</div>
+
+<hr class="divider">
+
+<!-- Tool Volume Breakdown -->
+<h2>{volume_section_title}</h2>
+<div class="stats-grid stats-{tool_count}">
+  <!-- One stat card per tool: page views, users, active time -->
+</div>
+
+<hr class="divider">
+
+<!-- URL Path Analysis — where time goes within each tool -->
+<!-- Use bar-row components for horizontal bar charts -->
+<!-- Use donut-container for distribution charts -->
+<!-- Use two-col layout to show charts side by side -->
+
+<hr class="divider">
+
+<!-- Behavioral Signal Analysis (if applicable) -->
+<!-- Copy-paste counts, field changes, manual data entry, etc. -->
+
+<hr class="divider">
+
+<!-- Session Deep Dive Summaries (if distinctive workflow patterns found) -->
+<!-- Use session-card components to describe each session -->
+
+<hr class="divider">
+
+<!-- Automation Candidates -->
+<h2>Automation Candidates</h2>
+<p style="color:var(--text-secondary);font-size:14px;margin-bottom:16px;">{candidate_count} workflows identified. Estimates derived from event volumes, session-observed time-per-task, and conservative eliminability rates.</p>
+
+<div class="stats-grid stats-3">
+  <div class="stat stat-success"><div class="stat-value">~{team_hours} hrs</div><div class="stat-label">Est. Monthly Hours Saved</div></div>
+  <div class="stat"><div class="stat-value">{candidate_count}</div><div class="stat-label">Identified Workflows</div></div>
+  <div class="stat stat-info"><div class="stat-value">~{daily_hours} hrs</div><div class="stat-label">Per Working Day</div></div>
+</div>
+
+<!--
+  {REPEAT:candidate_card}
+  One card per automation candidate.
+  Each card MUST have an id attribute for anchor linking from the overview table.
+-->
+<div class="card" id="{candidate_anchor_id}">
+  <div class="card-header"><span>#{candidate_rank}: {workflow_name}</span><span class="pill pill-{level_class}">{automation_level}</span></div>
+  <div class="card-body">
+    <div class="detail-grid">
+      <div><div class="detail-label">Signal from Data</div><div class="detail-value">{signal_description}</div></div>
+      <div><div class="detail-label">Est. Monthly Savings</div><div class="detail-value">{savings_description}</div></div>
+    </div>
+    <div class="detail-label">Future State</div>
+    <p class="future-state">{future_state_description}</p>
+    <div class="evidence"><div class="evidence-label">Session Evidence</div>{evidence_summary}</div>
+    <!-- Evidence Clips — timestamped session replay links -->
+    <div class="evidence-clips">
+      <div class="evidence-label">Watch It Happen</div>
+      <!-- {REPEAT:evidence_clip} -->
+      <a href="{session_url}" target="_blank"><span class="ts">&#9654; {timestamp}</span> {clip_description}</a>
+      <!-- {/REPEAT} -->
+    </div>
+  </div>
+</div>
+<!-- {/REPEAT} -->
+
+<hr class="divider">
+
+<!-- Impact Summary Table -->
+<h2>Automation Impact Summary</h2>
+<table>
+  <thead>
+    <tr><th>Workflow</th><th>Level</th><th>Monthly Events</th><th>Hours Saved / Month</th><th>Primary Tool</th></tr>
+  </thead>
+  <tbody>
+    <!-- One row per candidate -->
+  </tbody>
+</table>
+
+<hr class="divider">
+
+<!-- Implementation Roadmap -->
+<h2>Implementation Roadmap</h2>
+
+<div class="card roadmap-card">
+  <div class="card-header"><span>Phase 1: {phase1_title}</span><span class="pill pill-success">Quick Win</span></div>
+  <div class="card-body">
+    <p>{phase1_description}</p>
+    <div class="stats-grid stats-{phase1_stat_count}">
+      <!-- Phase 1 stats -->
+    </div>
+  </div>
+</div>
+
+<div class="card roadmap-card">
+  <div class="card-header"><span>Phase 2: {phase2_title}</span><span class="pill pill-info">High Impact</span></div>
+  <div class="card-body">
+    <p>{phase2_description}</p>
+    <div class="stats-grid stats-{phase2_stat_count}">
+      <!-- Phase 2 stats -->
+    </div>
+  </div>
+</div>
+
+<div class="card roadmap-card">
+  <div class="card-header"><span>Phase 3: {phase3_title}</span><span class="pill pill-neutral">Foundation</span></div>
+  <div class="card-body">
+    <p>{phase3_description}</p>
+    <div class="stats-grid stats-{phase3_stat_count}">
+      <!-- Phase 3 stats -->
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- Session Replays -->
+<h2>Session Replays</h2>
+<p style="color:var(--text-secondary);font-size:14px;margin-bottom:16px;">Click to watch the full FullStory session replays used for qualitative analysis in this report.</p>
+<div class="session-links">
+  <!-- {REPEAT:session_link} -->
+  <a href="{session_url}" target="_blank">{session_label}</a>
+  <!-- {/REPEAT} -->
+</div>
+
+<hr class="divider">
+
+<p class="footer">
+  <strong>Data source:</strong> FullStory Workforce MCP &mdash; Org {org_id} &mdash; {date_range}.<br>
+  {team_data_summary}<br>
+  Time estimates use conservative per-event assumptions.<br><br>
+  <strong>Prepared by:</strong> FullStory Solutions Engineering &mdash; Workforce Automation Analysis
+</p>
+
+</div>
+</div>
+<!-- {/REPEAT} -->
+
+<!-- ============================================================
+     MEASUREMENT & PROOF SECTION
+     Always present as the last tab.
+     ============================================================ -->
+<div id="section-measurement" class="section" style="display:none">
+<div class="report-container">
+
+<div class="section-nav"><button onclick="switchTab('overview')">&larr; Back to Overview</button></div>
+
+<h1>Measurement &amp; Proof</h1>
+<p class="subtitle">Baseline metrics, success criteria, and a guide to validating automation impact post-implementation.</p>
+
+<div class="callout callout-info">
+  <strong>This tab provides everything needed to track and prove ROI.</strong>
+  Each metric below links directly to FullStory. Click the link to name,
+  save, and add it to a dashboard for ongoing monitoring. After
+  implementation, re-run the analysis (Phase 5) or manually re-compute
+  metrics with shifted date ranges to measure impact.
+</div>
+
+<hr class="divider">
+
+<!-- Baseline Metrics Table -->
+<h2>Baseline Metrics</h2>
+<p class="section-subtitle">All key signal metrics from this analysis. Click the FullStory link to view, name, and save each metric for dashboard use.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Signal Name</th>
+      <th>Suggested Dashboard Name</th>
+      <th>Maps To</th>
+      <th style="text-align:right">Baseline Value</th>
+      <th>Significance</th>
+      <th>FullStory Link</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!--
+      {REPEAT:metric_row}
+      One row per metric from the ledger file.
+      - Signal Name: human-readable label
+      - Suggested Dashboard Name: [{prefix}] {Signal Name}
+      - Maps To: opportunity name (or "Baseline context")
+      - Baseline Value: computed value at time of analysis
+      - Significance: why this metric matters
+      - FullStory Link: https://app.fullstory.com/ui/{org_id}/metrics/create/{metric_id}
+    -->
+    <tr>
+      <td style="font-weight:600">{signal_name}</td>
+      <td><code>{dashboard_name}</code></td>
+      <td><span class="pill pill-{role_class}">{maps_to}</span></td>
+      <td class="hours" style="text-align:right">{baseline_value}</td>
+      <td style="font-size:12px;color:var(--text-secondary)">{significance}</td>
+      <td><a href="{fullstory_metric_url}" target="_blank" class="link-arrow">Open</a></td>
+    </tr>
+    <!-- {/REPEAT} -->
+  </tbody>
+</table>
+
+<hr class="divider">
+
+<!-- Per-Opportunity Success Criteria -->
+<h2>Success Criteria by Opportunity</h2>
+<p class="section-subtitle">Target reductions and measurement checkpoints for each automation opportunity. Targets are conservative — actual results may exceed these.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Opportunity</th>
+      <th>Primary Metric</th>
+      <th style="text-align:right">Baseline</th>
+      <th style="text-align:right">Target Reduction</th>
+      <th style="text-align:right">30-Day Check</th>
+      <th style="text-align:right">60-Day Check</th>
+      <th style="text-align:right">90-Day Check</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!--
+      {REPEAT:success_row}
+      One row per automation opportunity.
+      30/60/90-day checks show expected metric values if on track.
+    -->
+    <tr>
+      <td style="font-weight:600">{opportunity_name}</td>
+      <td>{primary_metric_name}</td>
+      <td style="text-align:right">{baseline}</td>
+      <td style="text-align:right;color:var(--success);font-weight:700">{target_pct}%</td>
+      <td style="text-align:right">{check_30}</td>
+      <td style="text-align:right">{check_60}</td>
+      <td style="text-align:right">{check_90}</td>
+    </tr>
+    <!-- {/REPEAT} -->
+  </tbody>
+</table>
+
+<hr class="divider">
+
+<!-- Before/After Template -->
+<h2>Before / After Results</h2>
+<p class="section-subtitle">Pre-filled with baseline data. After implementation, run Phase 5 to populate post-implementation results, or manually fill in values from FullStory dashboards.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Metric</th>
+      <th style="text-align:right">Before (Baseline)</th>
+      <th style="text-align:right">After (Post-Impl)</th>
+      <th style="text-align:right">Delta</th>
+      <th style="text-align:right">% Change</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!--
+      {REPEAT:before_after_row}
+      Pre-fill baseline column. Post-impl, delta, % change, and status
+      are populated by Phase 5 or manually.
+    -->
+    <tr>
+      <td style="font-weight:600">{metric_name}</td>
+      <td style="text-align:right">{baseline_value}</td>
+      <td style="text-align:right;color:var(--text-secondary)">—</td>
+      <td style="text-align:right;color:var(--text-secondary)">—</td>
+      <td style="text-align:right;color:var(--text-secondary)">—</td>
+      <td><span class="pill pill-neutral">Pending</span></td>
+    </tr>
+    <!-- {/REPEAT} -->
+  </tbody>
+</table>
+
+<hr class="divider">
+
+<!-- Dashboard Setup Guide -->
+<h2>Dashboard Setup Guide</h2>
+
+<div class="card">
+  <div class="card-header">How to Save These Metrics in FullStory</div>
+  <div class="card-body">
+    <p style="font-size:14px;line-height:1.8;margin-bottom:16px;">
+      Each metric link above opens the FullStory metric editor pre-loaded
+      with the query used in this analysis. To save for dashboarding:
+    </p>
+    <ol style="font-size:14px;line-height:2;padding-left:24px;">
+      <li>Click the <strong>FullStory Link</strong> in the table above</li>
+      <li>In the metric editor, click <strong>"Save"</strong></li>
+      <li>Name it using the <strong>Suggested Dashboard Name</strong> from the table (e.g., <code>[WFA-Acme-2026-05] Copied Comment Log</code>)</li>
+      <li>Navigate to <strong>Dashboards → Create New Dashboard</strong></li>
+      <li>Add each saved metric as a widget</li>
+      <li>Set the date range to match your implementation timeline</li>
+    </ol>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">How to Run Post-Implementation Measurement</div>
+  <div class="card-body">
+    <p style="font-size:14px;line-height:1.8;margin-bottom:16px;">
+      After implementing one or more automation opportunities:
+    </p>
+    <ol style="font-size:14px;line-height:2;padding-left:24px;">
+      <li>Return to the agent that produced this analysis</li>
+      <li>Say: <em>"Run the proof report for {prefix}"</em></li>
+      <li>Provide the <strong>implementation date</strong> and which opportunities were implemented</li>
+      <li>The agent will re-compute all metrics, compare before/after, pull fresh session replays, and generate a proof report HTML</li>
+    </ol>
+    <p style="font-size:13px;color:var(--text-secondary);margin-top:12px;">
+      Alternatively, manually re-run each metric in FullStory with a
+      post-implementation date range and record values in the Before/After
+      table above.
+    </p>
+  </div>
+</div>
+
+<!--
+  {IF:no_user_properties}
+  Show this callout if Phase 0.2 found no useful user properties.
+-->
+<div class="callout callout-warning" style="margin-top:24px">
+  <strong>Note on Team Groupings:</strong> Team groupings in this analysis
+  are inferred from tool usage patterns because no team/department/role
+  user properties were available in FullStory. Configuring user properties
+  (department, role, team) in FullStory will enable more precise team
+  segmentation in future analyses.
+</div>
+<!-- {/IF} -->
+
+<hr class="divider">
+
+<p class="footer">
+  <strong>FullStory Workforce Automation Analysis</strong> &mdash; Org {org_id} &mdash; {date_range}<br>
+  Metric ledger prefix: <code>{prefix}</code><br><br>
+  Prepared by FullStory Solutions Engineering
+</p>
+
+</div>
+</div>
+
+<!-- ============================================================
+     JAVASCRIPT — Tab switching and anchor navigation
+     ============================================================ -->
+<script>
+function switchTab(tab, anchor) {
+  document.querySelectorAll('.section').forEach(function(s) { s.style.display = 'none'; });
+  document.getElementById('section-' + tab).style.display = 'block';
+  document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+  document.querySelector('.tab[data-tab="' + tab + '"]').classList.add('active');
+  if (anchor) {
+    setTimeout(function() {
+      var el = document.getElementById(anchor);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  } else {
+    window.scrollTo(0, 0);
+  }
+}
+</script>
+
+</body>
+</html>
