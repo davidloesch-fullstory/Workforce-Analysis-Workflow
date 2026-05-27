@@ -278,6 +278,88 @@
   .session-card { margin: 12px 0; }
   .session-card .card-header .pills { display: flex; gap: 6px; }
 
+  /* Audit Trail (expandable per candidate card) */
+  .audit-trail { border-top: 1px solid var(--border); margin-top: 16px; }
+  .audit-toggle {
+    width: 100%; padding: 12px 0; background: none; border: none;
+    font-family: inherit; font-size: 13px; font-weight: 600;
+    color: var(--accent); cursor: pointer; display: flex;
+    align-items: center; gap: 6px; transition: color 0.15s;
+  }
+  .audit-toggle:hover { color: var(--text); }
+  .audit-toggle::before { content: "\25B6"; font-size: 10px; transition: transform 0.2s; }
+  .audit-toggle.open::before { transform: rotate(90deg); }
+  .audit-body {
+    display: none; padding: 0 0 12px; font-size: 12px;
+    color: var(--text-secondary); line-height: 1.6;
+  }
+  .audit-body.open { display: block; }
+  .audit-body h4 {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.4px; color: var(--text); margin: 16px 0 6px;
+  }
+  .audit-body h4:first-child { margin-top: 0; }
+  .audit-body table { font-size: 12px; margin: 6px 0 12px; }
+  .audit-body th { font-size: 10px; padding: 6px 8px; }
+  .audit-body td { padding: 6px 8px; font-size: 12px; }
+  .audit-body code {
+    background: var(--bg-alt); padding: 2px 6px; border-radius: 3px;
+    font-size: 11px; word-break: break-all;
+  }
+  .audit-formula {
+    background: var(--bg-alt); border: 1px solid var(--border);
+    border-radius: 6px; padding: 12px 16px; margin: 8px 0;
+    font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px;
+    font-weight: 600; color: var(--text); text-align: center;
+  }
+  .audit-formula .result { color: var(--success); font-size: 15px; }
+  .validation-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .validation-validated { background: var(--success-bg); color: #065f46; }
+  .validation-adjusted { background: var(--warning-bg); color: #92400e; }
+  .validation-flagged { background: var(--danger-bg); color: #991b1b; }
+  .validation-na { background: var(--bg-alt); color: var(--text-secondary); }
+
+  /* Methodology Tab */
+  .method-steps {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+    margin: 24px 0;
+  }
+  .method-step {
+    text-align: center; padding: 24px 16px; background: white;
+    border: 1px solid var(--border); border-radius: 10px;
+    position: relative;
+  }
+  .method-step-num {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--accent); color: white; font-size: 16px;
+    font-weight: 700; display: flex; align-items: center;
+    justify-content: center; margin: 0 auto 12px;
+  }
+  .method-step h3 { font-size: 14px; margin-bottom: 6px; }
+  .method-step p { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+  .formula-display {
+    background: linear-gradient(135deg, #1a1a2e, #2d2b55);
+    color: white; border-radius: 10px; padding: 24px 32px;
+    text-align: center; margin: 24px 0;
+  }
+  .formula-display .formula-text {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 16px; font-weight: 600; letter-spacing: 0.5px;
+  }
+  .formula-display .formula-explain {
+    margin-top: 16px; display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 12px; font-size: 12px; opacity: 0.85;
+  }
+  .formula-display .formula-var { font-weight: 700; font-size: 13px; }
+  @media (max-width: 768px) {
+    .method-steps { grid-template-columns: repeat(2, 1fr); }
+    .formula-display .formula-explain { grid-template-columns: repeat(2, 1fr); }
+  }
+
   /* Footer */
   .footer { margin-top: 40px; font-size: 11px; color: var(--text-secondary); line-height: 1.5; }
   #section-overview .footer { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border); text-align: center; }
@@ -333,6 +415,7 @@
 -->
 <div class="tab-bar">
   <button class="tab active" data-tab="overview" onclick="switchTab('overview')">Overview</button>
+  <button class="tab" data-tab="methodology" onclick="switchTab('methodology')">Methodology</button>
   <!-- {REPEAT:team_tab} — use exact team name from Phase 0.5 -->
   <button class="tab" data-tab="{team_id}" onclick="switchTab('{team_id}')">{team_label}</button>
   <!-- {/REPEAT} -->
@@ -499,6 +582,192 @@
 </div>
 
 <!-- ============================================================
+     METHODOLOGY SECTION
+     Always present as the second tab.
+     ============================================================ -->
+<div id="section-methodology" class="section" style="display:none">
+<div class="report-container">
+
+<div class="section-nav"><button onclick="switchTab('overview')">&larr; Back to Overview</button></div>
+
+<h1>How This Analysis Works</h1>
+<p class="subtitle">A transparent methodology you can verify, challenge, and trust.</p>
+
+<div class="method-steps">
+  <div class="method-step">
+    <div class="method-step-num">1</div>
+    <h3>Measure Tool Usage</h3>
+    <p>FullStory Workforce captures every page view, click, and interaction across your team's tools. We query this data to build a complete picture of where time goes.</p>
+  </div>
+  <div class="method-step">
+    <div class="method-step-num">2</div>
+    <h3>Watch Real Sessions</h3>
+    <p>We review actual employee session replays to observe manual workflows firsthand. Not surveys, not interviews &mdash; actual behavior.</p>
+  </div>
+  <div class="method-step">
+    <div class="method-step-num">3</div>
+    <h3>Identify Patterns</h3>
+    <p>We match quantitative signals (event volumes) to qualitative observations (session replays) to identify repetitive workflows a machine could handle.</p>
+  </div>
+  <div class="method-step">
+    <div class="method-step-num">4</div>
+    <h3>Estimate Impact</h3>
+    <p>We calculate hours saved using conservative assumptions. Every number traces back to a specific metric and formula you can verify.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<h2>The Estimation Formula</h2>
+
+<div class="formula-display">
+  <div class="formula-text">Hours Saved / Month &nbsp;=&nbsp; Events &times; Minutes &times; Eliminability% &divide; 60</div>
+  <div class="formula-explain">
+    <div><div class="formula-var">Events/Month</div>How often this workflow happens (from FullStory metrics)</div>
+    <div><div class="formula-var">Minutes/Event</div>How long it takes each time (from session observation)</div>
+    <div><div class="formula-var">Eliminability %</div>What share automation can realistically handle</div>
+    <div><div class="formula-var">&divide; 60</div>Convert minutes to hours</div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<h2>Where the Numbers Come From</h2>
+<p class="section-subtitle">Every input to the formula has a verifiable source.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Input</th>
+      <th>Source</th>
+      <th>How to Verify</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="font-weight:600">Event Volume</td>
+      <td>FullStory metric query (linked in each candidate's audit trail)</td>
+      <td>Click the metric link &rarr; confirm the count matches in FullStory</td>
+    </tr>
+    <tr>
+      <td style="font-weight:600">Time per Event</td>
+      <td>Session replay observation <em>or</em> conservative default from rubric</td>
+      <td>Watch the linked session replay at the cited timestamp &rarr; time the action yourself</td>
+    </tr>
+    <tr>
+      <td style="font-weight:600">Eliminability %</td>
+      <td>Based on automation type + workflow characteristics</td>
+      <td>See rationale in each candidate's "How We Got Here" audit trail</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr class="divider">
+
+<h2>Conservative by Design</h2>
+
+<div class="callout callout-info">
+  <strong>These estimates are designed to be a floor, not a ceiling.</strong>
+  We use conservative defaults, round down when uncertain, and apply modest
+  eliminability percentages. The goal is an estimate a skeptic would accept.
+  Actual results from implementation often exceed these projections.
+</div>
+
+<div class="stats-grid stats-3" style="margin-top:16px">
+  <div class="stat">
+    <div class="stat-value" style="color:var(--accent)">Session-first</div>
+    <div class="stat-label">Time estimates prefer observed data over defaults</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value" style="color:var(--accent)">50&ndash;70%</div>
+    <div class="stat-label">Typical eliminability (not 100%)</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value" style="color:var(--accent)">Auditable</div>
+    <div class="stat-label">Every number links to its source</div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- Validation Status — populated from Phase 3.4 results -->
+<h2>Metric Validation Summary</h2>
+<p class="section-subtitle">Primary signal metrics were cross-checked against existing org metrics where available.</p>
+
+<div class="stats-grid stats-4">
+  <div class="stat"><div class="stat-value">{validation_total}</div><div class="stat-label">Metrics Checked</div></div>
+  <div class="stat stat-success"><div class="stat-value">{validation_matched}</div><div class="stat-label">Within 20% of Org Baseline</div></div>
+  <div class="stat stat-warning"><div class="stat-value">{validation_adjusted}</div><div class="stat-label">Adjusted After Review</div></div>
+  <div class="stat stat-danger"><div class="stat-value">{validation_flagged}</div><div class="stat-label">Flagged (see notes)</div></div>
+</div>
+
+<!--
+  {IF:has_flagged_metrics}
+  Show flagged metrics with explanations.
+-->
+<div class="card" style="margin-top:16px">
+  <div class="card-header">Flagged Metric Discrepancies</div>
+  <div class="card-body">
+    <table>
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th style="text-align:right">Our Value</th>
+          <th style="text-align:right">Org Baseline</th>
+          <th style="text-align:right">Delta</th>
+          <th>Explanation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!--
+          {REPEAT:flagged_metric}
+          One row per flagged metric from Phase 3.4.
+        -->
+        <tr>
+          <td style="font-weight:600">{metric_name}</td>
+          <td style="text-align:right">{agent_value}</td>
+          <td style="text-align:right">{org_value}</td>
+          <td style="text-align:right;color:var(--danger)">{delta_pct}%</td>
+          <td style="font-size:12px">{explanation}</td>
+        </tr>
+        <!-- {/REPEAT} -->
+      </tbody>
+    </table>
+  </div>
+</div>
+<!-- {/IF} -->
+
+<hr class="divider">
+
+<h2>How to Challenge a Number</h2>
+<p class="section-subtitle">If any estimate seems off, here's how to verify it yourself.</p>
+
+<div class="card">
+  <div class="card-body">
+    <ol style="font-size:14px;line-height:2.2;padding-left:24px;">
+      <li>Find the <strong>candidate card</strong> for the opportunity in question (in the team tab)</li>
+      <li>Expand <strong>"How We Got Here"</strong> to see the full audit trail</li>
+      <li>Check the <strong>metric link</strong> &mdash; click it to open the metric in FullStory and confirm the count</li>
+      <li>Check the <strong>session replay</strong> &mdash; watch the cited timestamp and time the action yourself</li>
+      <li>Check the <strong>formula</strong> &mdash; verify that Events &times; Minutes &times; Eliminability% &divide; 60 = the stated hours</li>
+      <li>If any input is wrong, <strong>recalculate</strong> with the corrected value &mdash; the formula is transparent</li>
+    </ol>
+  </div>
+</div>
+
+<hr class="divider">
+
+<p class="footer">
+  <strong>FullStory Workforce Automation Analysis</strong> &mdash; Methodology<br>
+  Full scoring rubric, time estimation benchmarks, and automation classification
+  criteria are documented in the analysis playbook.<br><br>
+  Prepared by FullStory Solutions Engineering
+</p>
+
+</div>
+</div>
+
+<!-- ============================================================
      TEAM BLUEPRINT SECTIONS
      Generate one section per team analyzed.
      ============================================================ -->
@@ -578,6 +847,72 @@
       <!-- {REPEAT:evidence_clip} -->
       <a href="{session_url}" target="_blank"><span class="ts">&#9654; {timestamp}</span> {clip_description}</a>
       <!-- {/REPEAT} -->
+    </div>
+
+    <!-- Audit Trail — expandable "How We Got Here" section -->
+    <div class="audit-trail">
+      <button class="audit-toggle" onclick="toggleAudit(this)">How We Got Here &mdash; Full Audit Trail</button>
+      <div class="audit-body">
+
+        <h4>Signal Metrics</h4>
+        <table>
+          <thead>
+            <tr>
+              <th>Signal</th>
+              <th>MCP Query</th>
+              <th>Type</th>
+              <th style="text-align:right">Value</th>
+              <th>Validation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!--
+              {REPEAT:audit_metric}
+              One row per metric feeding this candidate.
+              Show the EXACT build_metric query string for transparency.
+            -->
+            <tr>
+              <td style="font-weight:600">{audit_signal_name}</td>
+              <td><code>{audit_query}</code></td>
+              <td>{audit_output_type}</td>
+              <td style="text-align:right;font-weight:600">{audit_value}</td>
+              <td><span class="validation-badge validation-{audit_validation_class}">{audit_validation_status}</span></td>
+            </tr>
+            <!-- {/REPEAT} -->
+          </tbody>
+        </table>
+
+        <h4>Time-per-Event Justification</h4>
+        <!--
+          If session-observed: link to session + timestamp + what was timed.
+          If default: reference the rubric category and default range.
+        -->
+        <div class="evidence">
+          <div class="evidence-label">Source: {time_source}</div>
+          {time_justification_html}
+        </div>
+
+        <h4>Eliminability Rationale</h4>
+        <div class="evidence">
+          <div class="evidence-label">{eliminability_pct}% &mdash; {automation_level}</div>
+          {eliminability_rationale_html}
+        </div>
+
+        <h4>Full Calculation</h4>
+        <!--
+          Show each sub-calculation if multiple signals are summed.
+          Always show the final formula with all values plugged in.
+        -->
+        <!-- {REPEAT:audit_sub_calc} (if multiple signals) -->
+        <div style="font-size:12px;margin:4px 0;color:var(--text-secondary)">
+          {sub_signal}: {sub_volume} &times; {sub_time} min &times; {sub_elim}% &divide; 60 = <strong>{sub_hours} hrs</strong>
+        </div>
+        <!-- {/REPEAT} -->
+        <div class="audit-formula">
+          {total_volume} events &times; {time_per_event} min &times; {eliminability_pct}% &divide; 60 = <span class="result">~{total_hours} hrs/month</span>
+        </div>
+
+      </div>
     </div>
   </div>
 </div>
@@ -871,6 +1206,11 @@ function switchTab(tab, anchor) {
   } else {
     window.scrollTo(0, 0);
   }
+}
+function toggleAudit(btn) {
+  btn.classList.toggle('open');
+  var body = btn.nextElementSibling;
+  body.classList.toggle('open');
 }
 </script>
 

@@ -183,6 +183,86 @@ Group the ranked candidates into 3 phases:
 
 ---
 
+## Metric Validation Requirements
+
+Before presenting any estimates to a customer, primary signal metrics
+MUST be validated. See SKILL.md Phase 3.4 for the full procedure.
+
+### What "Validated" Means
+
+A metric is validated when you can explain to a skeptic exactly what it
+counts and why the number is what it is. Validation does NOT require
+matching an org baseline exactly — it requires understanding and
+documenting any difference.
+
+### Validation Status Definitions
+
+| Status | Meaning | Deliverable Treatment |
+|--------|---------|----------------------|
+| **Validated** | Metric cross-checked against org baseline, within 20% | Green badge in audit trail |
+| **Adjusted** | Original metric diverged >20%; query was refined to align | Amber badge, show original + adjusted values |
+| **Flagged** | Divergence exists and is explained but not corrected | Red badge, explanation in Methodology tab |
+| **N/A** | No org baseline exists to compare against | Grey badge, note in audit trail |
+
+### Common Divergence Causes
+
+| Cause | Typical Impact | Resolution |
+|-------|---------------|------------|
+| Time range mismatch | 5–30% | Align exact start/end dates |
+| Event vs session counting | 2–5x | Clarify which counting method; adjust query |
+| Filter scope (domain vs subdomain) | 10–50% | Narrow or broaden URL filter to match |
+| User segment differences | 20–80% | Apply matching user segment filter |
+| Bot/test traffic inclusion | 5–20% | Exclude non-human traffic if detectable |
+| Defined event conditions | Variable | Rebuild metric using the exact defined event |
+
+### Transparency Rule
+
+**Every primary signal metric that drives an hours-saved estimate must
+appear in the candidate's audit trail with:**
+1. The exact `build_metric` query string used
+2. The computed value
+3. A validation status badge
+4. If Flagged: a plain-English explanation of the discrepancy
+
+This is non-negotiable. Opaque numbers undermine credibility.
+
+---
+
+## Audit Trail Requirements
+
+Every automation candidate in the deliverable MUST include an expandable
+"How We Got Here" section. This is the mechanism that makes estimates
+defensible.
+
+### Required Components
+
+1. **Signal Metrics Table**: metric name, exact MCP query, output type,
+   computed value, validation status
+2. **Time-per-Event Justification**: session-observed (with URL +
+   timestamp) or default estimate (with rubric category cited)
+3. **Eliminability Rationale**: the percentage used, why, and what
+   would change it
+4. **Full Calculation**: the complete formula with all values plugged in,
+   including sub-calculations if multiple signals are summed
+
+### Time-per-Event Source Hierarchy
+
+Always prefer higher-confidence sources:
+
+1. **Session-observed** (highest confidence): You watched the action in a
+   replay and timed it. Cite: session URL, timestamp range, # repetitions
+   observed, average time.
+2. **Cross-referenced**: Multiple session observations corroborate a
+   similar time. Cite all sessions.
+3. **Default estimate** (lowest confidence): No session observation
+   available. Use the benchmark table above. Cite which category and
+   note it's a default.
+
+If a candidate's primary time estimate uses a default, the audit trail
+MUST note this and the deliverable should call it out as lower-confidence.
+
+---
+
 ## Quality Checks
 
 Before finalizing candidates, verify:
@@ -195,3 +275,8 @@ Before finalizing candidates, verify:
 - [ ] Implementation complexity accounts for the org's current tech maturity
 - [ ] The total hours saved passes a sanity check against total active time
       (savings shouldn't exceed the team's total working hours)
+- [ ] Every primary signal metric has a validation status in the audit trail
+- [ ] Every time-per-event estimate cites its source (session or default)
+- [ ] Every eliminability percentage includes a written rationale
+- [ ] The full calculation formula is shown with all values plugged in
+- [ ] Flagged metrics are documented in the Methodology tab
