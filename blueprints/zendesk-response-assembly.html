@@ -1,0 +1,554 @@
+<!--
+  GOLD-STANDARD EXEMPLAR — Implementation Blueprint (HTML)
+  ========================================================
+  Opportunity #1: AI-Drafted Response Assembly (Zendesk).
+
+  This is the reference implementation that implementation-blueprint.md points
+  to. It demonstrates the TARGET quality, depth, structure, styling, and the
+  SVG architecture-diagram language. It is built from the shared
+  blueprint-template.html shell (same inline CSS).
+
+  NOTE: A real deliverable repeats the blueprint tab + overview card ONCE PER
+  opportunity in a single tabbed file. This exemplar shows the Overview tab +
+  ONE fully-worked blueprint tab so the depth and SVG styling are concrete.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acme Support — Implementation Blueprints (Exemplar)</title>
+<style>
+  :root {
+    --bg: #ffffff; --bg-alt: #f7f8fa; --text: #1a1a2e; --text-secondary: #64748b;
+    --border: #e2e8f0; --accent: #6c5ce7; --accent-light: #f0eeff; --accent-dark: #4c3bcf;
+    --success: #10b981; --success-bg: #ecfdf5; --warning: #f59e0b; --warning-bg: #fffbeb;
+    --danger: #ef4444; --danger-bg: #fef2f2; --info: #3b82f6; --info-bg: #eff6ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: var(--text); background: var(--bg-alt); line-height: 1.6; }
+  .tab-bar { position: sticky; top: 0; z-index: 100; background: white; display: flex; justify-content: flex-start; flex-wrap: wrap; border-bottom: 1px solid var(--border); padding: 0 16px; overflow-x: auto; }
+  .tab { padding: 14px 20px; font-size: 14px; font-weight: 500; white-space: nowrap; color: var(--text-secondary); background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; transition: color 0.15s, border-color 0.15s; font-family: inherit; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  .tab .tab-rank { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: var(--bg-alt); font-size: 10px; font-weight: 700; margin-right: 7px; color: var(--text-secondary); }
+  .tab.active .tab-rank { background: var(--accent); color: white; }
+  .section-nav { padding: 16px 0 0; }
+  .section-nav button { background: none; border: none; color: var(--accent); font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; padding: 6px 0; }
+  .section-nav button:hover { text-decoration: underline; }
+  .report-container { max-width: 1100px; margin: 0 auto; padding: 40px 32px 80px; background: var(--bg); }
+  .container { max-width: 1200px; margin: 0 auto; padding: 40px 32px 80px; }
+  h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+  h2 { font-size: 22px; font-weight: 600; margin: 32px 0 12px; }
+  h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; margin-top: 18px; }
+  .subtitle { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+  .section-subtitle { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+  .hero { background: linear-gradient(135deg, #1a1a2e 0%, #2d2b55 50%, #6c5ce7 100%); color: white; padding: 56px 32px 44px; text-align: center; }
+  .hero h1 { font-size: 34px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; }
+  .hero .tagline { font-size: 17px; opacity: 0.85; margin-bottom: 24px; }
+  .hero-stats { display: flex; justify-content: center; gap: 48px; margin-top: 28px; flex-wrap: wrap; }
+  .hero-stat-value { font-size: 40px; font-weight: 800; line-height: 1; }
+  .hero-stat-label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; margin-top: 6px; }
+  .bp-header { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin: 8px 0 24px; background: white; }
+  .bp-header-accent { height: 6px; width: 100%; background: linear-gradient(90deg, var(--accent), #a29bfe); }
+  .bp-header-body { padding: 22px 24px; }
+  .bp-header h1 { font-size: 24px; margin-bottom: 12px; }
+  .bp-meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 8px; }
+  .bp-meta-item { background: var(--bg-alt); border-radius: 8px; padding: 12px 14px; }
+  .bp-meta-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); }
+  .bp-meta-value { font-size: 15px; font-weight: 700; margin-top: 2px; }
+  .bp-meta-value.savings { color: var(--success); }
+  .cards-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 24px 0; }
+  .pitch-card { background: white; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; text-decoration: none; color: inherit; display: flex; flex-direction: column; cursor: pointer; }
+  .pitch-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(108,92,231,0.15); }
+  .pitch-card-accent { height: 6px; width: 100%; }
+  .pitch-card-body { padding: 22px; flex: 1; display: flex; flex-direction: column; }
+  .pitch-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; margin-top: 0; }
+  .pitch-card p { font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; flex: 1; }
+  .pitch-card-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .pitch-card-stat { background: var(--bg-alt); border-radius: 8px; padding: 10px; text-align: center; }
+  .pitch-card-stat-value { font-size: 18px; font-weight: 700; }
+  .pitch-card-stat-label { font-size: 10px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.3px; }
+  .pitch-card-cta { padding: 10px 16px; background: var(--bg-alt); border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--accent); text-align: center; }
+  .pitch-card:hover .pitch-card-cta { background: var(--accent-light); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0; }
+  th { text-align: left; padding: 10px 12px; background: var(--bg-alt); border-bottom: 2px solid var(--border); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px; color: var(--text-secondary); }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .total-row td { background: var(--bg-alt); font-weight: 700; border-top: 2px solid var(--border); }
+  td.num, th.num { text-align: right; }
+  td.hours { font-weight: 700; }
+  .callout { padding: 16px 20px; border-radius: 8px; font-size: 14px; line-height: 1.55; margin: 16px 0; }
+  .callout-info { background: var(--info-bg); border-left: 4px solid var(--info); }
+  .callout-success { background: var(--success-bg); border-left: 4px solid var(--success); }
+  .callout-warning { background: var(--warning-bg); border-left: 4px solid var(--warning); }
+  .callout-danger { background: var(--danger-bg); border-left: 4px solid var(--danger); }
+  .callout strong { font-weight: 700; }
+  .stats-grid { display: grid; gap: 12px; margin: 16px 0; }
+  .stats-3 { grid-template-columns: repeat(3, 1fr); }
+  .stat { text-align: center; padding: 16px 12px; background: var(--bg-alt); border-radius: 8px; border: 1px solid var(--border); }
+  .stat-value { font-size: 26px; font-weight: 700; line-height: 1.2; }
+  .stat-label { font-size: 12px; color: var(--text-secondary); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .pill { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
+  .pill-success { background: var(--success-bg); color: #065f46; }
+  .pill-info { background: var(--info-bg); color: #1e40af; }
+  .pill-warning { background: var(--warning-bg); color: #92400e; }
+  .pill-neutral { background: var(--bg-alt); color: var(--text-secondary); }
+  .pill-accent { background: var(--accent-light); color: var(--accent-dark); }
+  .bp-section { scroll-margin-top: 70px; }
+  .bp-section-num { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; background: var(--accent); color: white; font-size: 15px; font-weight: 700; margin-right: 10px; vertical-align: middle; }
+  .checklist { list-style: none; margin: 12px 0; }
+  .checklist li { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; font-size: 13px; }
+  .checklist li::before { content: ""; flex-shrink: 0; width: 18px; height: 18px; margin-top: 2px; border: 2px solid var(--border); border-radius: 4px; background: white; }
+  .checklist li.done::before { content: "\2713"; color: white; background: var(--success); border-color: var(--success); font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+  pre.code { background: #1a1a2e; color: #e2e8f0; border-radius: 8px; padding: 16px 18px; font-family: 'SF Mono', 'Fira Code', ui-monospace, monospace; font-size: 12.5px; line-height: 1.55; overflow-x: auto; margin: 12px 0; }
+  code.inline { background: var(--bg-alt); padding: 2px 6px; border-radius: 3px; font-size: 12px; font-family: 'SF Mono', ui-monospace, monospace; word-break: break-all; }
+  .build-step { border: 1px solid var(--border); border-radius: 10px; margin: 14px 0; overflow: hidden; }
+  .build-step-head { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--bg-alt); border-bottom: 1px solid var(--border); }
+  .build-step-num { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: white; font-weight: 700; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+  .build-step-title { font-weight: 600; font-size: 14px; flex: 1; }
+  .build-step-body { padding: 16px; font-size: 13px; }
+  .build-step-body ol, .build-step-body ul { margin: 6px 0 6px 20px; }
+  .build-step-body li { margin: 4px 0; }
+  .matrix td:first-child { font-weight: 600; }
+  .recommended { background: var(--success-bg); }
+  .recommended td:first-child::after { content: " \2605"; color: var(--success); }
+  .src { font-size: 11px; color: var(--text-secondary); }
+  .src a { color: var(--accent); text-decoration: none; }
+  .src a:hover { text-decoration: underline; }
+  .verify-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+  .verify-verified { background: var(--success-bg); color: #065f46; }
+  .verify-unverified { background: var(--warning-bg); color: #92400e; }
+  .verify-plangated { background: var(--info-bg); color: #1e40af; }
+  .evidence { margin-top: 8px; padding: 10px 14px; background: var(--bg-alt); border-radius: 6px; font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+  .evidence-label { font-weight: 600; color: var(--text); font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 4px; }
+  .clip-link { display: block; padding: 4px 0; color: var(--accent); font-size: 12px; font-weight: 500; text-decoration: none; }
+  .clip-link:hover { text-decoration: underline; }
+  .clip-link .ts { font-weight: 700; color: var(--text); margin-right: 4px; }
+  .arch { width: 100%; margin: 16px 0; border: 1px solid var(--border); border-radius: 12px; background: white; padding: 12px 8px 8px; }
+  .arch svg { width: 100%; height: auto; display: block; }
+  .arch-legend { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; margin-top: 10px; padding-bottom: 4px; }
+  .arch-legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-secondary); }
+  .arch-legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+  .nd-label { font: 600 13px -apple-system, sans-serif; fill: #1a1a2e; }
+  .nd-label-light { font: 600 13px -apple-system, sans-serif; fill: #ffffff; }
+  .nd-sub { font: 400 10.5px -apple-system, sans-serif; fill: #64748b; }
+  .nd-sub-light { font: 400 10.5px -apple-system, sans-serif; fill: #cbd5e1; }
+  .edge-label { font: 600 10px -apple-system, sans-serif; fill: #64748b; }
+  .footer { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-secondary); line-height: 1.5; }
+  @media (max-width: 900px) { .cards-grid { grid-template-columns: 1fr; } .hero-stats { flex-direction: column; gap: 16px; } .bp-meta { grid-template-columns: repeat(2, 1fr); } .stats-3 { grid-template-columns: repeat(2, 1fr); } }
+  @media print { body { background: white; } .tab-bar, .section-nav { display: none; } .section { display: block !important; page-break-before: always; } .container, .report-container { padding: 20px; max-width: 100%; } .build-step, .arch, table, .stats-grid { break-inside: avoid; } h2 { break-after: avoid; } pre.code { white-space: pre-wrap; } }
+</style>
+</head>
+<body>
+
+<div class="tab-bar">
+  <button class="tab active" data-tab="overview" onclick="switchTab('overview')">Overview</button>
+  <button class="tab" data-tab="ai-response" onclick="switchTab('ai-response')"><span class="tab-rank">1</span>AI Response Assembly</button>
+</div>
+
+<!-- ===================== OVERVIEW TAB ===================== -->
+<div id="section-overview" class="section">
+  <div class="hero">
+    <h1>Implementation Blueprints</h1>
+    <p class="tagline">Acme Support &mdash; Customer Support &mdash; Build-Ready Automation Guides</p>
+    <div class="hero-stats">
+      <div><div class="hero-stat-value">~255</div><div class="hero-stat-label">Hours Saved / Month</div></div>
+      <div><div class="hero-stat-value">~1.5</div><div class="hero-stat-label">FTE Equivalent</div></div>
+      <div><div class="hero-stat-value">1</div><div class="hero-stat-label">Blueprint (exemplar)</div></div>
+      <div><div class="hero-stat-value">3</div><div class="hero-stat-label">Rollout Phases</div></div>
+    </div>
+  </div>
+  <div class="container">
+    <div class="callout callout-info" style="margin-top:0"><strong>Exemplar note:</strong> A real deliverable shows one card and one tab <em>per opportunity</em>. This reference includes a single fully-worked blueprint so the structure, depth, and SVG styling are concrete.</div>
+    <h2>Build-Ready Blueprints</h2>
+    <p class="section-subtitle">Each blueprint is a complete, team-ready build guide: current state, architecture, step-by-step build, monitoring, rollout, and cost. Click a card or tab to open it.</p>
+    <div class="cards-grid">
+      <div class="pitch-card" onclick="switchTab('ai-response')">
+        <div class="pitch-card-accent" style="background: linear-gradient(90deg, #6c5ce7, #a29bfe)"></div>
+        <div class="pitch-card-body">
+          <h3>#1: AI-Drafted Response Assembly</h3>
+          <p>Agents spend ~42% of active time copy-pasting fragments from past tickets to compose replies. AI pre-drafts responses from full ticket context, KB, and similar resolved tickets.</p>
+          <div class="pitch-card-stats">
+            <div class="pitch-card-stat"><div class="pitch-card-stat-value" style="color:#6c5ce7">~255h</div><div class="pitch-card-stat-label">Monthly Savings</div></div>
+            <div class="pitch-card-stat"><div class="pitch-card-stat-value">AI-Assisted</div><div class="pitch-card-stat-label">AI Drafting</div></div>
+          </div>
+          <div class="pitch-card-cta">Open Blueprint &rarr;</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+    <h2>Sequenced Rollout</h2>
+    <p class="section-subtitle">Recommended implementation order across all blueprints.</p>
+    <table>
+      <thead><tr><th>Phase</th><th>Blueprints</th><th>Type</th><th class="num">Hours/Mo</th><th>Effort</th></tr></thead>
+      <tbody>
+        <tr><td style="font-weight:600">Phase 1</td><td>AI-Drafted Response Assembly</td><td><span class="pill pill-info">AI-Assisted</span></td><td class="num hours">255</td><td>2&ndash;3 weeks</td></tr>
+        <tr class="total-row"><td>Total</td><td>1 blueprint (exemplar)</td><td></td><td class="num" style="color:var(--success)">255</td><td></td></tr>
+      </tbody>
+    </table>
+    <p class="footer"><strong>FullStory Workforce &mdash; Implementation Blueprints</strong> &mdash; Exemplar &mdash; Demonstration data<br>Generated from a workforce automation analysis. Platform specifics verified against live vendor documentation where cited.<br><br>Prepared by FullStory Solutions Engineering</p>
+  </div>
+</div>
+
+<!-- ===================== BLUEPRINT TAB ===================== -->
+<div id="section-ai-response" class="section" style="display:none">
+<div class="report-container">
+
+  <div class="section-nav"><button onclick="switchTab('overview')">&larr; Back to Overview</button></div>
+
+  <div class="bp-header">
+    <div class="bp-header-accent" style="background: linear-gradient(90deg, #6c5ce7, #a29bfe)"></div>
+    <div class="bp-header-body">
+      <h1>#1: AI-Drafted Response Assembly</h1>
+      <div class="bp-meta">
+        <div class="bp-meta-item"><div class="bp-meta-label">Platform</div><div class="bp-meta-value">Zendesk</div></div>
+        <div class="bp-meta-item"><div class="bp-meta-label">Automation Level</div><div class="bp-meta-value">AI-Assisted</div></div>
+        <div class="bp-meta-item"><div class="bp-meta-label">Pattern</div><div class="bp-meta-value">AI Drafting</div></div>
+        <div class="bp-meta-item"><div class="bp-meta-label">Est. Savings</div><div class="bp-meta-value savings">~255 hrs/mo</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 1: CURRENT STATE -->
+  <div class="bp-section" id="ai-response-current">
+    <h2><span class="bp-section-num">1</span>Current State</h2>
+    <h3>What the Data Shows</h3>
+    <table>
+      <thead><tr><th>Signal</th><th class="num">Monthly Volume</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td>Copied Previous Message</td><td class="num">1,612</td><td>FullStory defined event</td></tr>
+        <tr><td>Copied Comment Log</td><td class="num">2,487</td><td>FullStory defined event</td></tr>
+        <tr><td>Copied Text Editor</td><td class="num">994</td><td>FullStory defined event</td></tr>
+        <tr class="total-row"><td>Total copy-paste events</td><td class="num">5,093</td><td>Combined</td></tr>
+      </tbody>
+    </table>
+    <h3>What Sessions Revealed</h3>
+    <p style="font-size:13px;color:var(--text-secondary)">Across 3 observed agent sessions (~7.5 hours, ~37 tickets):</p>
+    <ul style="font-size:13px;margin:8px 0 8px 20px">
+      <li>Agents spend <strong>~42% of active time</strong> composing replies.</li>
+      <li>Dominant pattern: open ticket &rarr; read history &rarr; copy fragments from previous messages and comment log &rarr; paste into composer &rarr; edit and stitch &rarr; send.</li>
+      <li>One agent copied from history <strong>5+ times</strong> to assemble a single response.</li>
+      <li>One agent spent <strong>9 minutes</strong> reading + copy-pasting on a single ticket.</li>
+      <li>Knowledge Base accounts for only <strong>0.4%</strong> of page views (126 / 34,455) &mdash; agents copy from past ticket history instead of consulting KB.</li>
+    </ul>
+    <div class="evidence">
+      <div class="evidence-label">Watch It Happen</div>
+      <a class="clip-link" href="#" target="_blank"><span class="ts">&#9654; 04:12</span> Agent copies three fragments from the comment log into the reply composer</a>
+      <a class="clip-link" href="#" target="_blank"><span class="ts">&#9654; 09:48</span> 9-minute single-ticket assembly: read history, copy, paste, edit, send</a>
+    </div>
+    <div class="callout callout-warning"><strong>The Human Cost:</strong> ~255 hours/month assembling responses by hand; inconsistent quality (depends which old ticket the agent finds); slower resolution; steep ramp for new agents with no history to copy; tribal knowledge trapped in old threads instead of a searchable KB.</div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECTION 2: ARCHITECTURE OVERVIEW -->
+  <div class="bp-section" id="ai-response-architecture">
+    <h2><span class="bp-section-num">2</span>Architecture Overview</h2>
+    <div class="arch">
+      <svg viewBox="0 0 980 300" role="img" aria-label="AI response drafting architecture: customer comment triggers a webhook into middleware, which calls an LLM and posts an internal-note draft for the agent to review and send.">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"></path>
+          </marker>
+        </defs>
+        <!-- edges (drawn first so nodes sit on top) -->
+        <path d="M140,150 L166,150" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arrow)"></path>
+        <path d="M292,150 L318,150" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arrow)"></path>
+        <path d="M398,110 L398,76" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arrow)"></path>
+        <path d="M430,76 L430,110" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arrow)"></path>
+        <path d="M484,150 L552,150" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arrow)"></path>
+        <path d="M698,150 L766,150" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arrow)"></path>
+        <text class="edge-label" x="375" y="98" text-anchor="end">prompt</text>
+        <text class="edge-label" x="453" y="98" text-anchor="start">draft</text>
+        <text class="edge-label" x="518" y="142" text-anchor="middle">POST note</text>
+        <text class="edge-label" x="732" y="142" text-anchor="middle">shown</text>
+        <!-- Trigger -->
+        <rect x="16" y="120" width="124" height="60" rx="10" fill="#f0eeff" stroke="#6c5ce7" stroke-width="1.5"></rect>
+        <text class="nd-label" x="78" y="146" text-anchor="middle">Customer</text>
+        <text class="nd-sub" x="78" y="164" text-anchor="middle">new comment</text>
+        <!-- Webhook -->
+        <rect x="168" y="120" width="124" height="60" rx="10" fill="#f0eeff" stroke="#6c5ce7" stroke-width="1.5"></rect>
+        <text class="nd-label" x="230" y="146" text-anchor="middle">Zendesk Webhook</text>
+        <text class="nd-sub" x="230" y="164" text-anchor="middle">trigger fires</text>
+        <!-- LLM (above) -->
+        <rect x="354" y="16" width="120" height="60" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"></rect>
+        <text class="nd-label" x="414" y="42" text-anchor="middle">LLM API</text>
+        <text class="nd-sub" x="414" y="60" text-anchor="middle">drafts reply</text>
+        <!-- Middleware (center) -->
+        <rect x="320" y="110" width="164" height="80" rx="10" fill="#1a1a2e" stroke="#2d2b55" stroke-width="1.5"></rect>
+        <text class="nd-label-light" x="402" y="140" text-anchor="middle">Middleware</text>
+        <text class="nd-sub-light" x="402" y="158" text-anchor="middle">fetch context</text>
+        <text class="nd-sub-light" x="402" y="173" text-anchor="middle">build prompt &middot; route</text>
+        <!-- Internal note (output) -->
+        <rect x="554" y="120" width="144" height="60" rx="10" fill="#ecfeff" stroke="#06b6d4" stroke-width="1.5"></rect>
+        <text class="nd-label" x="626" y="146" text-anchor="middle">Internal Note</text>
+        <text class="nd-sub" x="626" y="164" text-anchor="middle">AI draft posted</text>
+        <!-- Agent (human) -->
+        <rect x="768" y="110" width="180" height="80" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="1.5"></rect>
+        <text class="nd-label" x="858" y="140" text-anchor="middle">Agent</text>
+        <text class="nd-sub" x="858" y="158" text-anchor="middle">review &middot; edit &middot; send</text>
+        <text class="nd-sub" x="858" y="173" text-anchor="middle">3 steps, ~30 sec</text>
+      </svg>
+      <div class="arch-legend">
+        <div class="arch-legend-item"><span class="arch-legend-dot" style="background:#6c5ce7"></span>Trigger</div>
+        <div class="arch-legend-item"><span class="arch-legend-dot" style="background:#1a1a2e"></span>Middleware</div>
+        <div class="arch-legend-item"><span class="arch-legend-dot" style="background:#3b82f6"></span>External API / LLM</div>
+        <div class="arch-legend-item"><span class="arch-legend-dot" style="background:#06b6d4"></span>Output</div>
+        <div class="arch-legend-item"><span class="arch-legend-dot" style="background:#10b981"></span>Human</div>
+      </div>
+    </div>
+    <h3>Data Flow</h3>
+    <ol style="font-size:13px;margin:8px 0 8px 20px">
+      <li><strong>Trigger:</strong> customer creates or updates a ticket (new comment).</li>
+      <li><strong>Webhook fires:</strong> Zendesk sends ticket ID + event type to middleware.</li>
+      <li><strong>Context assembly:</strong> middleware fetches the full thread, requester info, org metadata, KB articles, and similar resolved tickets.</li>
+      <li><strong>AI generation:</strong> the LLM drafts a response from the assembled context.</li>
+      <li><strong>Draft delivery:</strong> the draft is posted as an internal note on the ticket.</li>
+      <li><strong>Agent review:</strong> the agent opens the ticket, sees the draft, edits, and sends.</li>
+    </ol>
+    <h3>Build vs. Buy</h3>
+    <table class="matrix">
+      <thead><tr><th>Approach</th><th>Pros</th><th>Cons</th></tr></thead>
+      <tbody>
+        <tr><td>Zendesk AI Agent (native)</td><td>Zero middleware, built-in, Zendesk-managed</td><td>Less prompt control, Zendesk pricing, limited context control</td></tr>
+        <tr class="recommended"><td>Custom middleware</td><td>Full prompt control, any LLM, custom KB integration, audit trail</td><td>Requires hosting, more setup, you maintain it</td></tr>
+        <tr><td>Third-party (Forethought, Ada, &hellip;)</td><td>Turnkey, pre-built Zendesk integration</td><td>Vendor lock-in, monthly cost, less quality control</td></tr>
+      </tbody>
+    </table>
+    <div class="callout callout-info"><strong>Recommendation:</strong> Start with custom middleware for maximum control over response quality. Re-evaluate Zendesk AI Agent if its prompt customization improves.</div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECTION 3: DETAILED BUILD STEPS -->
+  <div class="bp-section" id="ai-response-build">
+    <h2><span class="bp-section-num">3</span>Detailed Build Steps</h2>
+    <h3>Prerequisites</h3>
+    <ul class="checklist">
+      <li>Zendesk Admin access (webhooks, API tokens, macros)</li>
+      <li>Cloud hosting account (GCP Cloud Functions, AWS Lambda, or similar)</li>
+      <li>LLM API key (OpenAI, Anthropic, or Google AI)</li>
+      <li>Zendesk API token (Admin Center &rarr; Apps and Integrations &rarr; Zendesk API)</li>
+    </ul>
+
+    <div class="build-step">
+      <div class="build-step-head"><span class="build-step-num">1</span><span class="build-step-title">Create Zendesk API Token</span><span class="verify-badge verify-verified">Verified</span></div>
+      <div class="build-step-body">
+        <ol>
+          <li>Go to <strong>Admin Center &rarr; Apps and Integrations &rarr; Zendesk API</strong>.</li>
+          <li>Enable Token Access and click <strong>Add API Token</strong>; name it <code class="inline">ai-response-drafter</code>.</li>
+          <li>Copy and store the token securely (used by the middleware).</li>
+        </ol>
+        <p>Auth format for API calls: <code class="inline">{email}/token:{api_token}</code></p>
+        <div class="src">Source: <a href="https://developer.zendesk.com/api-reference/introduction/security-and-auth/" target="_blank">Zendesk API — Security and Auth</a></div>
+      </div>
+    </div>
+
+    <div class="build-step">
+      <div class="build-step-head"><span class="build-step-num">2</span><span class="build-step-title">Build the Middleware Function</span></div>
+      <div class="build-step-body">
+        <p>Create a serverless function (example: Google Cloud Function, Node.js):</p>
+        <pre class="code">ai-response-drafter/
+├── index.js      # Main handler
+├── zendesk.js    # Zendesk API client
+├── llm.js        # LLM API client
+├── prompt.js     # Prompt template builder
+├── package.json  # Dependencies
+└── .env          # API keys (use Secret Manager in production)</pre>
+        <p>Core logic (pseudocode):</p>
+        <pre class="code">async function handleWebhook(request) {
+  const { ticket_id } = request.body;
+  const ticket    = await zendesk.getTicket(ticket_id);
+  const comments  = await zendesk.getTicketComments(ticket_id);
+  const requester = await zendesk.getUser(ticket.requester_id);
+  const kb        = await zendesk.searchKB(ticket.subject);
+  const similar   = await zendesk.searchTickets(ticket.subject, { status: 'solved', limit: 3 });
+  const prompt    = buildPrompt({ ticket, comments, requester, kb, similar });
+  const draft     = await llm.generateResponse(prompt);
+  await zendesk.addInternalNote(ticket_id, formatDraft(draft));
+  return { status: 'ok', ticket_id };
+}</pre>
+      </div>
+    </div>
+
+    <div class="build-step">
+      <div class="build-step-head"><span class="build-step-num">3</span><span class="build-step-title">Zendesk API Calls for Context + Draft Delivery</span><span class="verify-badge verify-verified">Verified</span></div>
+      <div class="build-step-body">
+        <ul>
+          <li>Get ticket + comments: <code class="inline">GET /api/v2/tickets/{id}.json</code>, <code class="inline">GET /api/v2/tickets/{id}/comments.json</code></li>
+          <li>Search KB: <code class="inline">GET /api/v2/help_center/articles/search.json?query={keywords}</code></li>
+          <li>Search similar solved tickets: <code class="inline">GET /api/v2/search.json?query=type:ticket status:solved {keywords}</code></li>
+          <li>Post internal note (the AI draft): <code class="inline">PUT /api/v2/tickets/{id}.json</code> with <code class="inline">ticket.comment.public = false</code></li>
+        </ul>
+        <pre class="code">PUT /api/v2/tickets/{id}.json
+{
+  "ticket": {
+    "comment": {
+      "body": "AI Draft Response:\n\n{draft_text}\n\n---\nSources: {kb_links}\nSimilar: {ticket_ids}",
+      "public": false
+    }
+  }
+}</pre>
+        <div class="src">Source: <a href="https://developer.zendesk.com/api-reference/ticketing/tickets/tickets/" target="_blank">Zendesk Ticketing API — Tickets</a> · <a href="https://developer.zendesk.com/api-reference/help_center/help-center-api/search/" target="_blank">Help Center Search API</a></div>
+      </div>
+    </div>
+
+    <div class="build-step">
+      <div class="build-step-head"><span class="build-step-num">4</span><span class="build-step-title">LLM Prompt Template</span></div>
+      <div class="build-step-body">
+        <pre class="code">You are a customer support agent for {company_name}. Draft a response to the
+customer's latest message on this support ticket.
+
+## Ticket Context
+- Subject: {ticket.subject}   - Priority: {ticket.priority}
+- Customer: {requester.name} ({requester.email})
+- Organization: {org.name} (Plan: {org.plan_type})
+
+## Conversation History (most recent first)
+{formatted_comments}
+
+## Relevant Knowledge Base Articles
+{formatted_kb_articles}
+
+## Similar Resolved Tickets
+{formatted_similar_tickets}
+
+## Instructions
+- Professional, empathetic; reference KB articles with links when applicable.
+- Match the tone of previous agent responses in this thread.
+- If unsure, say so and suggest the agent verify — do NOT invent information.
+- Concise but complete; clear paragraphs and bullet steps.
+
+## Draft Response:</pre>
+      </div>
+    </div>
+
+    <div class="build-step">
+      <div class="build-step-head"><span class="build-step-num">5</span><span class="build-step-title">Create the Zendesk Webhook + Trigger</span><span class="verify-badge verify-verified">Verified</span></div>
+      <div class="build-step-body">
+        <p><strong>Webhook</strong> (Admin Center &rarr; Apps and Integrations &rarr; Webhooks &rarr; Create): POST, JSON, endpoint <code class="inline">https://{cloud-function-url}/draft</code>, Bearer-token auth.</p>
+        <p><strong>Trigger</strong> (Admin Center &rarr; Objects and Rules &rarr; Business Rules &rarr; Triggers):</p>
+        <ul>
+          <li>Conditions (ALL): status is not Solved; comment is present from end user; tags do not contain <code class="inline">ai_draft_skip</code>.</li>
+          <li>Action: Notify webhook &rarr; AI Response Drafter with body <code class="inline">{"ticket_id":"{{ticket.id}}","event":"customer_comment"}</code>.</li>
+        </ul>
+        <div class="src">Source: <a href="https://support.zendesk.com/hc/en-us/articles/4408839108378" target="_blank">Zendesk — Creating webhooks</a> · <a href="https://support.zendesk.com/hc/en-us/articles/4408886797466" target="_blank">Creating triggers</a></div>
+      </div>
+    </div>
+
+    <div class="build-step">
+      <div class="build-step-head"><span class="build-step-num">6</span><span class="build-step-title">Create Agent Macros</span></div>
+      <div class="build-step-body">
+        <ul>
+          <li><strong>Use AI Draft</strong> — copy the latest internal note (AI draft) into the public reply field.</li>
+          <li><strong>Skip AI Draft</strong> — add tag <code class="inline">ai_draft_skip</code> (manual compose for sensitive topics).</li>
+          <li><strong>Submit as Pending + 5-Day Follow-up</strong> — bundles status + follow-up timer, replacing the 5-click field ritual (pairs with disposition auto-population).</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECTION 4: MONITORING & QUALITY TRACKING -->
+  <div class="bp-section" id="ai-response-monitoring">
+    <h2><span class="bp-section-num">4</span>Monitoring &amp; Quality Tracking</h2>
+    <table>
+      <thead><tr><th>Where</th><th>Metric</th><th>Target Direction</th></tr></thead>
+      <tbody>
+        <tr><td><span class="pill pill-accent">FullStory</span></td><td>Copy-paste event count</td><td>Down from 5,093/mo baseline</td></tr>
+        <tr><td><span class="pill pill-accent">FullStory</span></td><td>Time composing replies</td><td>Down from 42% of active time</td></tr>
+        <tr><td><span class="pill pill-neutral">Middleware</span></td><td>LLM latency (p50/p95), error rate, token cost</td><td>Stable / within budget</td></tr>
+        <tr><td><span class="pill pill-info">Zendesk</span></td><td>Draft acceptance rate, edit distance</td><td>Acceptance up, edit distance down</td></tr>
+        <tr><td><span class="pill pill-info">Zendesk</span></td><td>First response time, CSAT</td><td>FRT faster; CSAT stable or up</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECTION 5: VALIDATION & ROLLOUT -->
+  <div class="bp-section" id="ai-response-rollout">
+    <h2><span class="bp-section-num">5</span>Validation &amp; Rollout</h2>
+    <h3>Testing Checklist</h3>
+    <ul class="checklist">
+      <li>Webhook fires on new customer comment (verify in webhook logs)</li>
+      <li>Middleware fetches correct ticket data; KB + similar-ticket search return useful results</li>
+      <li>LLM generates appropriate, on-brand responses</li>
+      <li>Draft appears as internal note on the correct ticket; NOT on solved tickets or agent-only comments</li>
+      <li>Error handling: invalid ticket ID, API timeout, LLM error</li>
+      <li>Rate limiting under burst load (10+ tickets/min)</li>
+      <li>AI draft is clearly marked as AI-generated</li>
+    </ul>
+    <h3>Phased Rollout</h3>
+    <div class="stats-grid stats-3">
+      <div class="stat"><div class="stat-value" style="font-size:15px;color:var(--accent)">Week 1&ndash;2</div><div class="stat-label">Shadow mode, 2 pilot agents, optional use</div></div>
+      <div class="stat"><div class="stat-value" style="font-size:15px;color:var(--accent)">Week 3&ndash;4</div><div class="stat-label">Full team, optional; refine prompt from edits</div></div>
+      <div class="stat"><div class="stat-value" style="font-size:15px;color:var(--accent)">Week 5+</div><div class="stat-label">Default starting point; agents keep full control</div></div>
+    </div>
+    <div class="callout callout-danger"><strong>Rollback:</strong> Immediate &mdash; disable the Zendesk trigger. Graceful &mdash; catch-all trigger tags new tickets <code class="inline">ai_draft_skip</code> (drafts stop, no data lost). Full &mdash; delete webhook + trigger; agents return to manual workflow with zero impact.</div>
+    <h3>Success Criteria</h3>
+    <table>
+      <thead><tr><th>Metric</th><th class="num">Baseline</th><th class="num">Target (90 days)</th></tr></thead>
+      <tbody>
+        <tr><td>Copy-paste events/month</td><td class="num">5,093</td><td class="num" style="color:var(--success);font-weight:700">&lt; 1,500 (70% &darr;)</td></tr>
+        <tr><td>Time composing replies</td><td class="num">42% of active time</td><td class="num" style="color:var(--success);font-weight:700">&lt; 20%</td></tr>
+        <tr><td>Agent response time</td><td class="num">Current avg</td><td class="num" style="color:var(--success);font-weight:700">30% faster</td></tr>
+        <tr><td>Draft acceptance rate</td><td class="num">N/A</td><td class="num" style="color:var(--success);font-weight:700">&gt; 60%</td></tr>
+        <tr><td>CSAT score</td><td class="num">Current baseline</td><td class="num" style="color:var(--success);font-weight:700">No decrease</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECTION 6: COST ESTIMATE & PLATFORM ADAPTATIONS -->
+  <div class="bp-section" id="ai-response-cost">
+    <h2><span class="bp-section-num">6</span>Cost Estimate &amp; Platform Adaptations</h2>
+    <table>
+      <thead><tr><th>Component</th><th class="num">Est. Monthly Cost</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td>LLM API (~1K tokens/call &times; 5,093 calls)</td><td class="num">~$25&ndash;50</td><td><span class="src"><a href="https://openai.com/api/pricing/" target="_blank">OpenAI pricing</a></span></td></tr>
+        <tr><td>Cloud Function hosting</td><td class="num">~$5&ndash;10</td><td><span class="src"><a href="https://cloud.google.com/functions/pricing" target="_blank">GCP Functions pricing</a></span></td></tr>
+        <tr><td>Zendesk API calls (included in plan)</td><td class="num">$0</td><td><span class="src">Existing plan</span></td></tr>
+        <tr class="total-row"><td>Total</td><td class="num">~$30&ndash;60/mo</td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="callout callout-success"><strong>ROI:</strong> ~$30&ndash;60/month against <strong>~255 hours/month</strong> of agent time saved &mdash; a strong return even at modest agent hourly rates. <span class="src">Costs are estimates; verify against current vendor pricing pages before quoting.</span></div>
+    <h3>Platform Adaptations</h3>
+    <table>
+      <thead><tr><th>Platform</th><th>Trigger</th><th>API for Context</th><th>Draft Delivery</th></tr></thead>
+      <tbody>
+        <tr><td style="font-weight:600">Zendesk</td><td>Trigger + Webhook</td><td>Zendesk REST API v2</td><td>Internal note via API</td></tr>
+        <tr><td style="font-weight:600">Intercom</td><td>Webhook (conversation.user.replied)</td><td>Intercom API</td><td>Admin note via API</td></tr>
+        <tr><td style="font-weight:600">Freshdesk</td><td>Automation Rule + Webhook</td><td>Freshdesk API v2</td><td>Private note via API</td></tr>
+        <tr><td style="font-weight:600">ServiceNow</td><td>Business Rule + REST Message</td><td>Table API</td><td>Work note via API</td></tr>
+        <tr><td style="font-weight:600">Salesforce Service Cloud</td><td>Flow + Platform Event</td><td>Salesforce REST API</td><td>Chatter / Case Comment</td></tr>
+      </tbody>
+    </table>
+    <div class="callout callout-info">The middleware logic, prompt template, and rollout strategy stay the same regardless of platform &mdash; only the trigger, context API, and delivery mechanism change.</div>
+  </div>
+
+  <p class="footer">
+    <strong>Data source:</strong> FullStory Workforce MCP &mdash; demonstration data. Platform specifics verified against live Zendesk / vendor docs where cited (see Source links). Costs are estimates unless a pricing source is linked.<br>
+    <strong>Prepared by:</strong> FullStory Solutions Engineering
+  </p>
+
+</div>
+</div>
+
+<script>
+function switchTab(tab) {
+  document.querySelectorAll('.section').forEach(function(s){ s.style.display = 'none'; });
+  document.getElementById('section-' + tab).style.display = 'block';
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  var btn = document.querySelector('.tab[data-tab="' + tab + '"]');
+  if (btn) btn.classList.add('active');
+  window.scrollTo(0, 0);
+}
+</script>
+
+</body>
+</html>
