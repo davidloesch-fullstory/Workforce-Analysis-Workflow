@@ -1,19 +1,23 @@
 ---
 name: implementation-blueprint
 description: >-
-  Generate a detailed, step-by-step implementation blueprint for any automation
-  opportunity identified in a workforce automation analysis. Takes a ranked
-  opportunity (from the workforce analysis deliverable) and produces a complete
-  build guide covering current state, architecture, build steps, validation,
-  and rollout. Use when a user selects a specific automation opportunity and
+  Generate detailed, step-by-step implementation blueprints for automation
+  opportunities identified in a workforce automation analysis. Takes one or more
+  ranked opportunities and produces a single self-contained, tabbed HTML file
+  (one tab per opportunity) covering current state, architecture, build steps,
+  monitoring, validation, rollout, and cost. Use when a user selects an
+  automation opportunity — or asks to run blueprints across all of them — and
   asks "how do we actually build this?"
 ---
 
 # Automation Implementation Blueprint Generator
 
-Produces a complete, team-ready implementation guide for a single automation
-opportunity. The output is a document an engineering or ops team can pick up
-and start building from — no further discovery required.
+Produces complete, team-ready implementation guides for one or more automation
+opportunities. The output is a single self-contained, tabbed HTML file an
+engineering or ops team can pick up and start building from — no further
+discovery required. When the user asks for blueprints across all opportunities,
+all of them go in ONE tabbed file (Overview tab + one tab per opportunity) so a
+business leader can review everything in one place without switching documents.
 
 ## When to Use This Skill
 
@@ -21,7 +25,14 @@ and start building from — no further discovery required.
   detailed build plan
 - User says "how do we automate this?" or "build the implementation plan for
   opportunity #N"
+- User says "run the implementation blueprint across all opportunities" — build
+  one tab per opportunity in a single tabbed HTML file
 - User wants to hand off an automation project to their engineering team
+
+**Scope note**: Whether building for one opportunity or all of them, the output
+is always ONE self-contained tabbed HTML file. A single-opportunity request
+produces an Overview tab + one blueprint tab; an all-opportunities request adds
+one blueprint tab per opportunity. Never emit separate files per opportunity.
 
 ## Inputs Required
 
@@ -48,6 +59,12 @@ If any of these are missing, ask the user before proceeding.
 
 Every blueprint follows 6 sections. Each section has specific requirements
 detailed below.
+
+> **Format note**: The Markdown snippets below describe the *content* each
+> section must contain — they are NOT the output format. The output is HTML,
+> assembled from `blueprint-template.html`. Use the snippets as a checklist of
+> what data goes where, then render it with the template's HTML/CSS/SVG
+> components (see `blueprints/zendesk-response-assembly.html`).
 
 ---
 
@@ -104,28 +121,31 @@ A senior engineer should be able to look at this section and estimate LOE.
 
 **Must include**:
 
-1. **System diagram** (ASCII art) — what components connect to what,
-   directional data flow with numbered steps
+1. **System diagram** (inline SVG) — what components connect to what,
+   directional data flow with labeled arrows
 2. **Data flow narrative** — 4-6 numbered steps from trigger to outcome
 3. **Build vs Buy decision matrix** — at least 3 options compared
 
 **Guidelines for the system diagram**:
-- Use ASCII box-and-arrow diagrams (universally renderable)
-- Show: trigger source → middleware/logic → external APIs → output destination
-- Label each arrow with what data flows through it
-- Include the human touchpoint (where the person reviews/approves)
+- Build an inline `<svg>` using the `.arch` diagram system in
+  `blueprint-template.html`. Do NOT use ASCII art.
+- Color-code nodes by layer using the established palette:
+  trigger = purple (`#6c5ce7`), middleware = dark (`#1a1a2e`),
+  external API / LLM = blue (`#3b82f6`), output = teal (`#06b6d4`),
+  human touchpoint = green (`#10b981`).
+- Show the full path: trigger source → middleware/logic → external APIs →
+  output destination → human review.
+- Use `<rect rx="10">` nodes with `<text class="nd-label">` + `nd-sub`
+  captions, and `<path>` edges with one shared `<marker id="arrow">`.
+- Label each arrow with what data flows through it (`class="edge-label"`).
+- Always include the `.arch-legend` below the SVG.
+- See the worked SVG in `blueprints/zendesk-response-assembly.html` (Section 2)
+  as the copy-from reference.
 
-**Build vs Buy matrix template**:
-
-```markdown
-| Approach | Pros | Cons |
-|----------|------|------|
-| **Native platform feature** | {pros} | {cons} |
-| **Custom middleware** (recommended) | {pros} | {cons} |
-| **Third-party vendor** ({name}) | {pros} | {cons} |
-```
-
-Always include a recommendation with rationale.
+**Build vs Buy matrix** — render as an HTML `<table class="matrix">`; mark the
+recommended row with `class="recommended"`. Compare at least 3 options
+(native platform feature, custom middleware, third-party vendor) and always
+follow with a recommendation callout (`.callout-info`) and rationale.
 
 ---
 
@@ -144,6 +164,14 @@ completable by one person in one sitting.
    - Expected result after completing the step
 3. **Platform-specific details** — exact menu paths, field names, API
    routes (not vague descriptions like "set up the integration")
+4. **Grounding citations** — every API endpoint, menu path, and platform
+   feature MUST be verified against live vendor documentation (see the
+   "Grounding & Verification" step in Process) and carry a `<div class="src">`
+   source link. Mark each build step with a verification badge:
+   `verify-verified` (confirmed against current docs), `verify-unverified`
+   (from training data, not yet confirmed — flag it), or `verify-plangated`
+   (feature requires a specific plan tier). Never present unverified platform
+   specifics as confirmed.
 
 **Step detail calibration by automation pattern**:
 
@@ -237,7 +265,12 @@ tool?"
 
 **Must include**:
 
-1. **Monthly cost table** — itemized by component
+1. **Monthly cost table** — itemized by component, with a `<span class="src">`
+   source for each line. Any cost drawn from a vendor pricing page MUST link to
+   that page; costs without a live source must be labeled as estimates. Verify
+   pricing against current vendor pricing pages before quoting (see the
+   "Grounding & Verification" step) — do not present stale or assumed prices as
+   current.
 2. **ROI framing** — cost vs hours saved
 3. **Platform adaptation table** — how the same pattern applies to 3-4
    alternative platforms (for orgs considering tool migration or with
@@ -389,6 +422,9 @@ mass email operations, bulk record updates.
 
 ## Process
 
+For an all-opportunities request, run steps 1-9 once per opportunity, then
+assemble all of them into a single tabbed HTML file in step 10.
+
 1. **Receive the opportunity** — get the name, rank, signal data, time
    estimate, automation level, and session evidence from the workforce
    analysis deliverable.
@@ -398,64 +434,97 @@ mass email operations, bulk record updates.
    dominant one and note secondary elements.
 
 3. **Identify the platform** — confirm which tool the workflow lives in
-   (Zendesk, Salesforce, etc.). Look up that platform's:
-   - Webhook/trigger capabilities
-   - REST API documentation
-   - Native automation features (Flows, Triggers, Automations)
-   - Marketplace apps/integrations that could help
+   (Zendesk, Salesforce, etc.).
 
-4. **Write Section 1 (Current State)** — pull directly from the workforce
+4. **Ground in live documentation (mandatory)** — before writing platform
+   specifics, look up the current vendor documentation. Use the web tools
+   (`WebSearch` / `WebFetch`) to confirm, for the identified platform:
+   - Webhook/trigger capabilities and exact setup paths
+   - REST API endpoints, request/response shapes, and auth model
+   - Native automation features (Flows, Triggers, Automations) and their
+     plan-tier gating
+   - Current pricing for any paid component (LLM API, hosting, vendor add-ons)
+
+   Rules:
+   - Cite each verified fact with a source link rendered as
+     `<div class="src">Source: <a href="{url}">{title}</a></div>`.
+   - Tag build steps with a verification badge: `verify-verified` when
+     confirmed against current docs, `verify-unverified` when you could not
+     confirm (drawn from training data — say so), `verify-plangated` when the
+     feature requires a specific plan tier.
+   - If a tool's docs are unreachable, do NOT silently fall back to training
+     data as if confirmed — mark the relevant items `verify-unverified` and
+     note that they need confirmation.
+   - Never present assumed pricing or endpoints as current fact.
+
+5. **Write Section 1 (Current State)** — pull directly from the workforce
    analysis data. Copy the numbers and session evidence verbatim. Add
-   the human cost framing.
+   the human cost framing. Link session clips with timestamps.
 
-5. **Write Section 2 (Architecture)** — follow the pattern skeleton.
-   Adapt the system diagram to the specific platform's API and integration
-   points. Include the build-vs-buy matrix.
+6. **Write Section 2 (Architecture)** — follow the pattern skeleton. Build
+   the inline SVG diagram (`.arch` system) adapted to the platform's API and
+   integration points. Include the build-vs-buy matrix and recommendation.
 
-6. **Write Section 3 (Build Steps)** — follow the pattern-specific build
-   step template. Include real API endpoints, menu paths, config values,
-   and code examples. Every step should be actionable without needing to
-   look up documentation.
+7. **Write Section 3 (Build Steps)** — follow the pattern-specific build
+   step template. Include real, verified API endpoints, menu paths, config
+   values, and code examples, each with a source link and verification badge.
 
-7. **Write Section 4 (Monitoring)** — define metrics across FullStory,
+8. **Write Section 4 (Monitoring)** — define metrics across FullStory,
    middleware, and the platform. Tie back to the original signal events
    from the workforce analysis.
 
-8. **Write Section 5 (Validation & Rollout)** — write specific test cases
-   (not generic ones), define the 3-phase rollout, include rollback
-   instructions, and set success criteria with baseline numbers from the
-   workforce analysis.
+9. **Write Section 5 (Validation & Rollout) + Section 6 (Cost & Adaptations)**
+   — specific test cases (not generic), the 3-phase rollout, rollback
+   instructions, success criteria with baseline numbers; then itemized,
+   source-linked costs, ROI framing, and platform alternatives.
 
-9. **Write Section 6 (Cost & Adaptations)** — estimate costs based on
-   expected call volume, include platform alternatives.
-
-10. **Save the blueprint** — write to
-    `~/.cursor/skills/workforce-automation-analysis/blueprints/{slug}.md`
-    where `{slug}` is a kebab-case name derived from the opportunity name.
+10. **Assemble and save the tabbed HTML file** — copy the shell from
+    `blueprint-template.html`, fill the Overview tab (hero stats, one pitch
+    card per opportunity, sequenced-rollout table) and one blueprint tab per
+    opportunity, then write to
+    `~/.cursor/skills/workforce-automation-analysis/deliverables/{prefix}-blueprints.html`
+    where `{prefix}` matches the workforce analysis ledger/deliverable name
+    (e.g., `WFA-FSWorkforce-Support-2026-05`). One file per analysis — never
+    one file per opportunity. Blueprints are generated on demand and are NOT
+    persisted as separate Markdown files.
 
 ## Output Format
 
-The blueprint is a single Markdown file. Use the reference implementation
-at `blueprints/zendesk-response-assembly.md` as the gold standard for
-tone, depth, and structure.
+The blueprint deliverable is a **single self-contained, tabbed HTML file** —
+one Overview tab plus one tab per opportunity. It shares the styling of the
+Phase-4 analysis deliverable so the two read as one family.
+
+**Construction**:
+- Copy the shell, inline CSS, tab logic, and SVG diagram system from
+  `blueprint-template.html`. Keep everything inline — no external assets.
+- Each blueprint tab contains the 6 sections in order: Current State,
+  Architecture (with inline SVG), Build Steps, Monitoring, Validation &
+  Rollout, Cost & Platform Adaptations.
+- The Overview tab shows hero stats (total hours, FTE, blueprint count),
+  one clickable pitch card per opportunity, and a sequenced-rollout table.
+- Use `blueprints/zendesk-response-assembly.html` as the gold standard for
+  tone, depth, structure, styling, and the SVG architecture diagram.
 
 **Calibration guidelines**:
 - Build steps should be specific enough that a mid-level engineer can
-  follow them without asking questions
-- Code examples can be pseudocode but must show real API endpoints and
-  data structures
-- Time estimates should be conservative (defensible to a skeptic)
-- The blueprint should be 300-500 lines of Markdown
-- Use tables for structured data, not prose
-- Include checkboxes for prerequisites and testing (actionable checklists)
+  follow them without asking questions.
+- Code examples can be pseudocode but must show real, verified API endpoints
+  and data structures.
+- Time estimates should be conservative (defensible to a skeptic).
+- Use HTML tables for structured data, not prose.
+- Use `.checklist` lists for prerequisites and testing (actionable checklists).
+- Every platform specific and cost carries a source link + verification badge.
 
 ## Reference Implementation
 
-See `blueprints/zendesk-response-assembly.md` for a complete example
+See `blueprints/zendesk-response-assembly.html` for a complete example
 covering:
 - AI Drafting pattern
 - Zendesk platform
 - Response Assembly opportunity (#1, 255 hrs/month)
+- The shared tabbed shell, the 6-section layout, the inline SVG architecture
+  diagram, source-linked build steps with verification badges, and
+  source-linked costs.
 
-This reference demonstrates the target quality, depth, and format
+This reference demonstrates the target quality, depth, format, and styling
 for all blueprints.

@@ -1,0 +1,9 @@
+# macOS
+.DS_Store
+
+# Generated analysis artifacts (produced per-engagement, not part of the skill)
+deliverables/
+ledgers/
+
+# Stray archives
+*.zip
