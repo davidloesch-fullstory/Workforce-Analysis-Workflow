@@ -1,0 +1,570 @@
+<!--
+  FullStory Workforce — INSTRUMENTATION SPEC (Pre-Flight Config) Template
+  =======================================================================
+
+  Shared HTML/CSS/SVG shell for the instrumentation-spec deliverable. The agent
+  fills in actual data from tool research + live-docs grounding where placeholders
+  appear.
+
+  OUTPUT MODEL: ONE self-contained tabbed HTML file per engagement — an Overview
+  tab, ONE tab per tool, and a Team Rollup tab. All CSS inline in the single
+  <style> block; all JS in the single <script> block. No external dependencies.
+
+  Placeholders use the format: {PLACEHOLDER_NAME}
+  Repeating sections use:      {REPEAT:section_name} ... {/REPEAT}
+
+  The <style> block matches blueprint-template.html so specs are visually
+  consistent with the blueprint + Phase-4 deliverables. The gold-standard worked
+  example is instrumentation-specs/servicenow.html — copy from it.
+
+  DEPTH: conceptual. Name the action + surface; never invent CSS selectors.
+  GROUNDING: every tool specific + plan tier carries a <div class="src"> source
+  link and a verify-badge (verify-verified | verify-unverified | verify-plangated).
+  HANDOFF: always state that a human admin configures these in FullStory Data
+  Studio — the analysis tooling cannot create definitions.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{org_name} — FullStory Instrumentation Spec</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-alt: #f7f8fa;
+    --text: #1a1a2e;
+    --text-secondary: #64748b;
+    --border: #e2e8f0;
+    --accent: #6c5ce7;
+    --accent-light: #f0eeff;
+    --accent-dark: #4c3bcf;
+    --success: #10b981;
+    --success-bg: #ecfdf5;
+    --warning: #f59e0b;
+    --warning-bg: #fffbeb;
+    --danger: #ef4444;
+    --danger-bg: #fef2f2;
+    --info: #3b82f6;
+    --info-bg: #eff6ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: var(--text); background: var(--bg-alt); line-height: 1.6;
+  }
+
+  /* Tab Navigation */
+  .tab-bar {
+    position: sticky; top: 0; z-index: 100; background: white;
+    display: flex; justify-content: flex-start; flex-wrap: wrap;
+    border-bottom: 1px solid var(--border); padding: 0 16px; overflow-x: auto;
+  }
+  .tab {
+    padding: 14px 20px; font-size: 14px; font-weight: 500; white-space: nowrap;
+    color: var(--text-secondary); background: none; border: none;
+    border-bottom: 3px solid transparent; cursor: pointer;
+    transition: color 0.15s, border-color 0.15s; font-family: inherit;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  .tab .tab-rank {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 18px; height: 18px; border-radius: 50%; background: var(--bg-alt);
+    font-size: 10px; font-weight: 700; margin-right: 7px; color: var(--text-secondary);
+  }
+  .tab.active .tab-rank { background: var(--accent); color: white; }
+  .section-nav { padding: 16px 0 0; }
+  .section-nav button {
+    background: none; border: none; color: var(--accent);
+    font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; padding: 6px 0;
+  }
+  .section-nav button:hover { text-decoration: underline; }
+
+  .report-container { max-width: 1100px; margin: 0 auto; padding: 40px 32px 80px; background: var(--bg); }
+  .container { max-width: 1200px; margin: 0 auto; padding: 40px 32px 80px; }
+
+  h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+  h2 { font-size: 22px; font-weight: 600; margin: 32px 0 12px; }
+  h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; margin-top: 20px; }
+  .subtitle { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+  .section-subtitle { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+  /* Hero (Overview tab) */
+  .hero {
+    background: linear-gradient(135deg, #1a1a2e 0%, #2d2b55 50%, #6c5ce7 100%);
+    color: white; padding: 56px 32px 44px; text-align: center;
+  }
+  .hero h1 { font-size: 34px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; }
+  .hero .tagline { font-size: 17px; opacity: 0.85; margin-bottom: 24px; }
+  .hero-stats { display: flex; justify-content: center; gap: 48px; margin-top: 28px; flex-wrap: wrap; }
+  .hero-stat-value { font-size: 40px; font-weight: 800; line-height: 1; }
+  .hero-stat-label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; margin-top: 6px; }
+
+  /* Tool summary header band */
+  .bp-header { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin: 8px 0 24px; background: white; }
+  .bp-header-accent { height: 6px; width: 100%; background: linear-gradient(90deg, var(--accent), #a29bfe); }
+  .bp-header-body { padding: 22px 24px; }
+  .bp-header h1 { font-size: 24px; margin-bottom: 12px; }
+  .bp-meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 8px; }
+  .bp-meta-item { background: var(--bg-alt); border-radius: 8px; padding: 12px 14px; }
+  .bp-meta-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); }
+  .bp-meta-value { font-size: 15px; font-weight: 700; margin-top: 2px; }
+
+  /* Cards / pitch cards (overview) */
+  .cards-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin: 24px 0; }
+  .pitch-card { background: white; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; text-decoration: none; color: inherit; display: flex; flex-direction: column; cursor: pointer; }
+  .pitch-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(108,92,231,0.15); }
+  .pitch-card-accent { height: 6px; width: 100%; }
+  .pitch-card-body { padding: 22px; flex: 1; display: flex; flex-direction: column; }
+  .pitch-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; margin-top: 0; }
+  .pitch-card p { font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; flex: 1; }
+  .pitch-card-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .pitch-card-stat { background: var(--bg-alt); border-radius: 8px; padding: 10px; text-align: center; }
+  .pitch-card-stat-value { font-size: 18px; font-weight: 700; }
+  .pitch-card-stat-label { font-size: 10px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.3px; }
+  .pitch-card-cta { padding: 10px 16px; background: var(--bg-alt); border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--accent); text-align: center; }
+  .pitch-card:hover .pitch-card-cta { background: var(--accent-light); }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0; }
+  th { text-align: left; padding: 10px 12px; background: var(--bg-alt); border-bottom: 2px solid var(--border); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px; color: var(--text-secondary); }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .total-row td { background: var(--bg-alt); font-weight: 700; border-top: 2px solid var(--border); }
+  td.num, th.num { text-align: right; }
+
+  /* Callouts */
+  .callout { padding: 16px 20px; border-radius: 8px; font-size: 14px; line-height: 1.55; margin: 16px 0; }
+  .callout-info { background: var(--info-bg); border-left: 4px solid var(--info); }
+  .callout-success { background: var(--success-bg); border-left: 4px solid var(--success); }
+  .callout-warning { background: var(--warning-bg); border-left: 4px solid var(--warning); }
+  .callout-danger { background: var(--danger-bg); border-left: 4px solid var(--danger); }
+  .callout strong { font-weight: 700; }
+
+  /* Stat grids */
+  .stats-grid { display: grid; gap: 12px; margin: 16px 0; }
+  .stats-3 { grid-template-columns: repeat(3, 1fr); }
+  .stats-4 { grid-template-columns: repeat(4, 1fr); }
+  .stat { text-align: center; padding: 16px 12px; background: var(--bg-alt); border-radius: 8px; border: 1px solid var(--border); }
+  .stat-value { font-size: 26px; font-weight: 700; line-height: 1.2; }
+  .stat-label { font-size: 12px; color: var(--text-secondary); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* Pills */
+  .pill { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
+  .pill-success { background: var(--success-bg); color: #065f46; }
+  .pill-info { background: var(--info-bg); color: #1e40af; }
+  .pill-warning { background: var(--warning-bg); color: #92400e; }
+  .pill-danger { background: var(--danger-bg); color: #991b1b; }
+  .pill-neutral { background: var(--bg-alt); color: var(--text-secondary); }
+  .pill-accent { background: var(--accent-light); color: var(--accent-dark); }
+
+  /* Section anchors */
+  .bp-section { scroll-margin-top: 70px; }
+  .bp-section-num { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; background: var(--accent); color: white; font-size: 15px; font-weight: 700; margin-right: 10px; vertical-align: middle; }
+
+  /* Build step blocks (configuration handoff) */
+  .build-step { border: 1px solid var(--border); border-radius: 10px; margin: 14px 0; overflow: hidden; }
+  .build-step-head { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--bg-alt); border-bottom: 1px solid var(--border); }
+  .build-step-num { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: white; font-weight: 700; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+  .build-step-title { font-weight: 600; font-size: 14px; }
+  .build-step-body { padding: 16px; font-size: 13px; }
+
+  code.inline { background: var(--bg-alt); padding: 2px 6px; border-radius: 3px; font-size: 12px; word-break: break-all; font-family: 'SF Mono', ui-monospace, monospace; }
+
+  /* Source-grounding citation chips */
+  .src { font-size: 11px; }
+  .src a { color: var(--accent); text-decoration: none; }
+  .src a:hover { text-decoration: underline; }
+  .verify-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+  .verify-verified { background: var(--success-bg); color: #065f46; }
+  .verify-unverified { background: var(--warning-bg); color: #92400e; }
+  .verify-plangated { background: var(--info-bg); color: #1e40af; }
+
+  /* SVG flow diagram system (shared with blueprint .arch) */
+  .arch { width: 100%; margin: 16px 0; border: 1px solid var(--border); border-radius: 12px; background: white; padding: 8px; }
+  .arch svg { width: 100%; height: auto; display: block; }
+  .arch-legend { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; margin-top: 8px; padding-bottom: 6px; }
+  .arch-legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-secondary); }
+  .arch-legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+  .nd-trigger { fill: #f0eeff; stroke: #6c5ce7; }
+  .nd-middleware { fill: #1a1a2e; stroke: #2d2b55; }
+  .nd-external { fill: #eff6ff; stroke: #3b82f6; }
+  .nd-output { fill: #ecfeff; stroke: #06b6d4; }
+  .nd-human { fill: #ecfdf5; stroke: #10b981; }
+  .nd-label { font: 600 13px -apple-system, sans-serif; fill: var(--text); }
+  .nd-label-light { font: 600 13px -apple-system, sans-serif; fill: #ffffff; }
+  .nd-sub { font: 400 10px -apple-system, sans-serif; fill: var(--text-secondary); }
+  .nd-sub-light { font: 400 10px -apple-system, sans-serif; fill: #cbd5e1; }
+  .edge { stroke: #94a3b8; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+  .edge-label { font: 600 10px -apple-system, sans-serif; fill: var(--text-secondary); }
+
+  .footer { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-secondary); line-height: 1.5; }
+  .deftype-key { display: flex; flex-wrap: wrap; gap: 10px; margin: 8px 0 16px; }
+
+  @media (max-width: 900px) {
+    .cards-grid { grid-template-columns: 1fr; }
+    .hero-stats { flex-direction: column; gap: 16px; }
+    .bp-meta { grid-template-columns: repeat(2, 1fr); }
+    .stats-4, .stats-3 { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media print {
+    body { background: white; }
+    .tab-bar, .section-nav { display: none; }
+    .section { display: block !important; page-break-before: always; }
+    .container, .report-container { padding: 20px; max-width: 100%; }
+    .build-step, .arch, table { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<!--
+  TAB BAR: Overview first, then ONE tab per tool, then the Team Rollup tab.
+-->
+<div class="tab-bar">
+  <button class="tab active" data-tab="overview" onclick="switchTab('overview')">Overview</button>
+  <!-- {REPEAT:tool_tab} -->
+  <button class="tab" data-tab="{tool_id}" onclick="switchTab('{tool_id}')"><span class="tab-rank">{tool_num}</span>{tool_short_name}</button>
+  <!-- {/REPEAT} -->
+  <button class="tab" data-tab="team" onclick="switchTab('team')"><span class="tab-rank">T</span>{team_name} Rollup</button>
+</div>
+
+<!-- ============================================================ OVERVIEW ============================================================ -->
+<div id="section-overview" class="section">
+  <div class="hero">
+    <h1>FullStory Instrumentation Spec</h1>
+    <p class="tagline">{org_name} &mdash; {team_name} &mdash; Pre-Flight Configuration</p>
+    <div class="hero-stats">
+      <div><div class="hero-stat-value">{total_pages}</div><div class="hero-stat-label">Pages to Define</div></div>
+      <div><div class="hero-stat-value">{total_elements}</div><div class="hero-stat-label">Named Elements</div></div>
+      <div><div class="hero-stat-value">{total_events}</div><div class="hero-stat-label">Defined Events</div></div>
+      <div><div class="hero-stat-value">{total_properties}</div><div class="hero-stat-label">Custom Properties</div></div>
+    </div>
+  </div>
+  <div class="container">
+
+    <div class="callout callout-info">
+      <strong>What this document is.</strong> A pre-flight configuration plan. It tells a FullStory admin exactly which
+      <em>pages</em>, <em>named elements</em>, <em>defined events</em>, and <em>custom properties</em> to set up for a target tool
+      <strong>before</strong> a workforce automation analysis runs. Configuring these promotes the tool's signal from low-precision
+      URL-path inference to high-precision, action-level events.
+    </div>
+
+    <h2>How it fits the analysis</h2>
+    <p class="section-subtitle">Three parties, one loop. FullStory SE produces the spec, a FullStory admin configures it, and the analysis later consumes the new signals.</p>
+    <div class="arch">
+      <svg viewBox="0 0 1000 170" role="img" aria-label="Configure then capture then analyze flow">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"></path>
+          </marker>
+        </defs>
+        <rect class="nd-trigger" x="8" y="50" width="150" height="64" rx="10"></rect>
+        <text class="nd-label" x="83" y="78" text-anchor="middle">Research + Spec</text>
+        <text class="nd-sub" x="83" y="96" text-anchor="middle">SE: this document</text>
+        <path class="edge" d="M 158 82 L 232 82"></path>
+        <text class="edge-label" x="195" y="74" text-anchor="middle">hand off</text>
+        <rect class="nd-human" x="234" y="50" width="170" height="64" rx="10"></rect>
+        <text class="nd-label" x="319" y="74" text-anchor="middle">Configure in FullStory</text>
+        <text class="nd-sub" x="319" y="92" text-anchor="middle">Admin: Data Studio</text>
+        <text class="nd-sub" x="319" y="106" text-anchor="middle">(manual handoff)</text>
+        <path class="edge" d="M 404 82 L 478 82"></path>
+        <text class="edge-label" x="441" y="74" text-anchor="middle">capture</text>
+        <rect class="nd-output" x="480" y="50" width="150" height="64" rx="10"></rect>
+        <text class="nd-label" x="555" y="78" text-anchor="middle">Capture Window</text>
+        <text class="nd-sub" x="555" y="96" text-anchor="middle">~2&ndash;4 weeks of data</text>
+        <path class="edge" d="M 630 82 L 704 82"></path>
+        <text class="edge-label" x="667" y="74" text-anchor="middle">query</text>
+        <rect class="nd-middleware" x="706" y="50" width="180" height="64" rx="10"></rect>
+        <text class="nd-label-light" x="796" y="78" text-anchor="middle">Workforce Analysis</text>
+        <text class="nd-sub-light" x="796" y="96" text-anchor="middle">events = primary signal</text>
+        <path class="edge" d="M 886 114 C 886 150, 83 150, 83 118"></path>
+        <text class="edge-label" x="485" y="146" text-anchor="middle">findings inform the next instrumentation pass</text>
+      </svg>
+      <div class="arch-legend">
+        <div class="arch-legend-item"><span class="arch-legend-dot" style="background:#6c5ce7"></span>SE deliverable</div>
+        <div class="arch-legend-item"><span class="arch-legend-dot" style="background:#10b981"></span>Human step</div>
+        <div class="arch-legend-item"><span class="arch-legend-dot" style="background:#06b6d4"></span>Capture</div>
+        <div class="arch-legend-item"><span class="arch-legend-dot" style="background:#1a1a2e"></span>Analysis</div>
+      </div>
+    </div>
+
+    <div class="callout callout-warning">
+      <strong>The handoff is human.</strong> FullStory's analysis tooling can <em>discover</em> and <em>query</em> definitions, but it cannot
+      <em>create</em> them. A FullStory admin must configure the items in this spec via Data Studio (Data Management). This document is the
+      build sheet for that step.
+      <span class="src">Source: <a href="https://help.fullstory.com/hc/en-us/articles/20862510707351-Create-elements-events-and-pages-with-Data-Studio" target="_blank">FullStory &mdash; Create elements, events, and pages with Data Studio</a></span>
+    </div>
+
+    <h2>What's covered</h2>
+    <p class="section-subtitle">A tool-deep spec for each tool below, plus a team rollup showing where each tool sits in {team_name}'s wider tool set.</p>
+    <div class="cards-grid">
+      <!-- {REPEAT:tool_card} -->
+      <div class="pitch-card" onclick="switchTab('{tool_id}')">
+        <div class="pitch-card-accent" style="background: linear-gradient(90deg, {color_start}, {color_end})"></div>
+        <div class="pitch-card-body">
+          <h3>{tool_name} &mdash; Tool Spec</h3>
+          <p>{tool_one_liner}</p>
+          <div class="pitch-card-stats">
+            <div class="pitch-card-stat"><div class="pitch-card-stat-value" style="color:{color_start}">{tool_events}</div><div class="pitch-card-stat-label">Defined Events</div></div>
+            <div class="pitch-card-stat"><div class="pitch-card-stat-value">{tool_product}</div><div class="pitch-card-stat-label">{tool_object}</div></div>
+          </div>
+          <div class="pitch-card-cta">Open Tool Spec &rarr;</div>
+        </div>
+      </div>
+      <!-- {/REPEAT} -->
+      <div class="pitch-card" onclick="switchTab('team')">
+        <div class="pitch-card-accent" style="background: linear-gradient(90deg, #06b6d4, #67e8f9)"></div>
+        <div class="pitch-card-body">
+          <h3>{team_name} &mdash; Rollup</h3>
+          <p>{rollup_one_liner}</p>
+          <div class="pitch-card-stats">
+            <div class="pitch-card-stat"><div class="pitch-card-stat-value" style="color:#06b6d4">{tools_in_scope}</div><div class="pitch-card-stat-label">Tools in Scope</div></div>
+            <div class="pitch-card-stat"><div class="pitch-card-stat-value">{tools_specd}</div><div class="pitch-card-stat-label">Spec'd Now</div></div>
+          </div>
+          <div class="pitch-card-cta">Open Rollup &rarr;</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="footer">
+      <strong>FullStory Workforce &mdash; Instrumentation Spec (Pre-Flight)</strong> &mdash; {org_id} &mdash; {date}<br>
+      Conceptual depth: each item names the action and where it lives; the admin binds the CSS selector / URL rule in their instance.
+      Platform specifics verified against live vendor documentation where cited.<br><br>
+      Prepared by FullStory Solutions Engineering
+    </p>
+  </div>
+</div>
+
+<!-- ============================================================ PER-TOOL SPEC TABS ============================================================ -->
+<!-- {REPEAT:tool_section} -->
+<div id="section-{tool_id}" class="section" style="display:none">
+<div class="report-container">
+  <div class="section-nav"><button onclick="switchTab('overview')">&larr; Back to Overview</button></div>
+
+  <div class="bp-header">
+    <div class="bp-header-accent" style="background: linear-gradient(90deg, {color_start}, {color_end})"></div>
+    <div class="bp-header-body">
+      <h1>{tool_name} &mdash; Instrumentation Spec</h1>
+      <div class="bp-meta">
+        <div class="bp-meta-item"><div class="bp-meta-label">Product</div><div class="bp-meta-value">{tool_product}</div></div>
+        <div class="bp-meta-item"><div class="bp-meta-label">Surfaces</div><div class="bp-meta-value">{tool_surfaces}</div></div>
+        <div class="bp-meta-item"><div class="bp-meta-label">Depth</div><div class="bp-meta-value">Conceptual</div></div>
+        <div class="bp-meta-item"><div class="bp-meta-label">Definitions</div><div class="bp-meta-value">{tool_def_counts}</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="deftype-key">
+    <span class="pill pill-accent">Page</span>
+    <span class="pill pill-info">Named Element</span>
+    <span class="pill pill-success">Defined Event</span>
+    <span class="pill pill-neutral">Property</span>
+    <span class="verify-badge verify-verified">Verified vs docs</span>
+    <span class="verify-badge verify-plangated">Plan-gated</span>
+    <span class="verify-badge verify-unverified">Instance-specific</span>
+  </div>
+
+  <!-- SECTION 1: SURFACES -->
+  <div class="bp-section" id="{tool_id}-surfaces">
+    <h2><span class="bp-section-num">1</span>Surfaces &amp; The Discipline They Force</h2>
+    <p style="font-size:13px;color:var(--text-secondary)">{surfaces_intro}</p>
+    <table>
+      <thead><tr><th>Surface</th><th>What lives here</th><th>Notes for instrumentation</th></tr></thead>
+      <tbody>
+        <!-- {REPEAT:surface_row} -->
+        <tr><td><strong>{surface_name}</strong></td><td>{surface_contents}</td><td>{surface_notes}</td></tr>
+        <!-- {/REPEAT} -->
+      </tbody>
+    </table>
+    <div class="callout callout-warning">
+      <strong>Why conceptual depth is the right call here.</strong> {conceptual_depth_rationale}
+      <span class="src">Source: <a href="{fs_element_doc}" target="_blank">FullStory &mdash; named elements bind to CSS selectors</a> &middot; <a href="{vendor_ui_doc}" target="_blank">{vendor_ui_doc_title}</a></span>
+      <span class="verify-badge verify-verified">Verified vs docs</span>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECTION 2: PAGES -->
+  <div class="bp-section" id="{tool_id}-pages">
+    <h2><span class="bp-section-num">2</span>Pages to Define <span class="pill pill-accent">Page</span></h2>
+    <p class="section-subtitle">URL-rule groupings so navigation maps to meaningful destinations. Patterns are illustrative &mdash; vendor URLs are instance-specific; confirm in your instance. FullStory URL rules support <code class="inline">*</code>, <code class="inline">**</code>, and <code class="inline">[]</code>.</p>
+    <table>
+      <thead><tr><th>Page name</th><th>Illustrative URL rule</th><th>Why it matters</th><th>Verify</th></tr></thead>
+      <tbody>
+        <!-- {REPEAT:page_row} -->
+        <tr><td>{page_name}</td><td><code class="inline">{page_url_rule}</code></td><td>{page_why}</td><td><span class="verify-badge {page_verify_class}">{page_verify_label}</span></td></tr>
+        <!-- {/REPEAT} -->
+      </tbody>
+    </table>
+    <div class="src">Page rule syntax: <a href="https://help.fullstory.com/hc/en-us/articles/4407267904791-User-Defined-Pages" target="_blank">FullStory &mdash; User-Defined Pages (URL rules: * ** [])</a> <span class="verify-badge verify-verified">Verified vs docs</span></div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECTION 3: NAMED ELEMENTS -->
+  <div class="bp-section" id="{tool_id}-elements">
+    <h2><span class="bp-section-num">3</span>Named Elements to Capture <span class="pill pill-info">Named Element</span></h2>
+    <p class="section-subtitle">The specific controls whose use signals a decision or manual action. Named per surface; the admin binds the selector via Inspect Mode.</p>
+    <table>
+      <thead><tr><th>Element</th><th>Where it lives</th><th>Action it represents</th></tr></thead>
+      <tbody>
+        <!-- {REPEAT:element_row} -->
+        <tr><td>{element_name}</td><td>{element_surface}</td><td>{element_action}</td></tr>
+        <!-- {/REPEAT} -->
+      </tbody>
+    </table>
+    <div class="src">{element_source} <span class="verify-badge verify-verified">Verified vs docs</span></div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECTION 4: DEFINED EVENTS -->
+  <div class="bp-section" id="{tool_id}-events">
+    <h2><span class="bp-section-num">4</span>Defined Events <span class="pill pill-success">Defined Event</span></h2>
+    <p class="section-subtitle">The high-level "did X" signals, built from a named element and/or page criteria (conceptual). The right columns connect each event to the automation hypothesis it supports and to the vendor's own automation, so the analysis can frame build-vs-buy.</p>
+    <table>
+      <thead><tr><th>Defined Event</th><th>Built from (conceptual)</th><th>Workflow measured</th><th>Automation hypothesis</th><th>Maps to native {tool_name}</th></tr></thead>
+      <tbody>
+        <!-- {REPEAT:event_row} -->
+        <tr>
+          <td><strong>{event_name}</strong></td>
+          <td>{event_built_from}</td>
+          <td>{event_workflow}</td>
+          <td>{event_hypothesis}</td>
+          <td><span class="pill {event_native_pill}">{event_native}</span> <span class="verify-badge {event_verify_class}">{event_verify_label}</span></td>
+        </tr>
+        <!-- {/REPEAT} -->
+      </tbody>
+    </table>
+    <div class="callout callout-info">
+      <strong>Native-automation mapping caveat.</strong> {native_caveat}
+      <span class="src">Sources: {native_sources}</span>
+      <span class="verify-badge verify-plangated">Plan-gated</span>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECTION 5: CUSTOM PROPERTIES -->
+  <div class="bp-section" id="{tool_id}-props">
+    <h2><span class="bp-section-num">5</span>Custom Properties to Capture <span class="pill pill-neutral">Property</span></h2>
+    <p class="section-subtitle">Dimensions worth attaching to the events above so the analysis can slice by them.</p>
+    <table>
+      <thead><tr><th>Property</th><th>On which events</th><th>Why</th></tr></thead>
+      <tbody>
+        <!-- {REPEAT:prop_row} -->
+        <tr><td>{prop_name}</td><td>{prop_events}</td><td>{prop_why}</td></tr>
+        <!-- {/REPEAT} -->
+      </tbody>
+    </table>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECTION 6: HOW TO CONFIGURE -->
+  <div class="bp-section" id="{tool_id}-configure">
+    <h2><span class="bp-section-num">6</span>How to Configure in FullStory</h2>
+    <p class="section-subtitle">The admin handoff. All of this is no-code via Data Studio (Data Management). Order matters: pages &rarr; elements &rarr; events that reference them.</p>
+
+    <div class="build-step">
+      <div class="build-step-head"><span class="build-step-num">1</span><span class="build-step-title">Define Pages</span> <span class="verify-badge verify-verified">Verified vs docs</span></div>
+      <div class="build-step-body">
+        Go to <code class="inline">Settings &gt; Data Management &gt; Pages</code> &rarr; <strong>Create Page</strong>. Add each page from Section 2 using URL rules. Paste a real instance URL into the search box first to check for conflicts (rules are mutually exclusive).
+        <div class="src">Source: <a href="https://help.fullstory.com/hc/en-us/articles/360052331173-Pages-in-Fullstory" target="_blank">FullStory &mdash; Pages</a></div>
+      </div>
+    </div>
+
+    <div class="build-step">
+      <div class="build-step-head"><span class="build-step-num">2</span><span class="build-step-title">Name Elements</span> <span class="verify-badge verify-verified">Verified vs docs</span></div>
+      <div class="build-step-body">
+        Open a recorded {tool_name} session &rarr; <code class="inline">Page Insights &gt; Inspect Mode</code> &rarr; click the control &rarr; name it in Data Studio. Repeat per surface where agents work in more than one. The name maps to a CSS selector (<code class="inline">element_definition_id</code>).
+        <div class="src">Source: <a href="https://help.fullstory.com/hc/en-us/articles/20862510707351-Create-elements-events-and-pages-with-Data-Studio" target="_blank">FullStory &mdash; Data Studio</a> &middot; <a href="https://developer.fullstory.com/anywhere/warehouse/element-definitions/" target="_blank">Element Definitions</a></div>
+      </div>
+    </div>
+
+    <div class="build-step">
+      <div class="build-step-head"><span class="build-step-num">3</span><span class="build-step-title">Define Events</span> <span class="verify-badge verify-verified">Verified vs docs</span></div>
+      <div class="build-step-body">
+        In <code class="inline">Settings &gt; Data Management &gt; Events</code> &rarr; <strong>Create Event</strong> (or "Define event" from Inspect Mode / the event builder). Compose each event from Section 4 by referencing the named element plus page scope, and attach the Section 5 properties.
+        <div class="src">Source: <a href="https://help.fullstory.com/hc/en-us/articles/360051664454-Define-Events-in-Fullstory" target="_blank">FullStory &mdash; Define Events</a></div>
+      </div>
+    </div>
+
+    <div class="callout callout-success">
+      <strong>Then let it capture.</strong> Allow ~2&ndash;4 weeks of data accumulation before the analysis so volumes are meaningful. After that, the workforce analysis discovers these by name (<code class="inline">discover_org_context</code>) and builds metrics directly on them &mdash; promoting them from "enrichment" to <strong>primary signal</strong>.
+    </div>
+  </div>
+
+  <p class="footer">
+    <strong>{tool_name} Instrumentation Spec</strong> &mdash; conceptual depth. URL rules and selectors are instance-specific and must be confirmed in-instance.
+    Native-automation mappings require plan-tier confirmation.<br>
+    <strong>Prepared by:</strong> FullStory Solutions Engineering
+  </p>
+</div>
+</div>
+<!-- {/REPEAT} -->
+
+<!-- ============================================================ TEAM ROLLUP ============================================================ -->
+<div id="section-team" class="section" style="display:none">
+<div class="report-container">
+  <div class="section-nav"><button onclick="switchTab('overview')">&larr; Back to Overview</button></div>
+
+  <div class="bp-header">
+    <div class="bp-header-accent" style="background: linear-gradient(90deg, #06b6d4, #67e8f9)"></div>
+    <div class="bp-header-body">
+      <h1>{team_name} &mdash; Team Rollup</h1>
+      <div class="bp-meta">
+        <div class="bp-meta-item"><div class="bp-meta-label">Primary Tool</div><div class="bp-meta-value">{primary_tool}</div></div>
+        <div class="bp-meta-item"><div class="bp-meta-label">Tools in Scope</div><div class="bp-meta-value">{tools_in_scope}</div></div>
+        <div class="bp-meta-item"><div class="bp-meta-label">Spec'd Now</div><div class="bp-meta-value">{tools_specd}</div></div>
+        <div class="bp-meta-item"><div class="bp-meta-label">Coverage Model</div><div class="bp-meta-value">By Workflow</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bp-section">
+    <h2><span class="bp-section-num">T</span>Workflow Coverage Across the Team's Stack</h2>
+    <p class="section-subtitle">{rollup_intro}</p>
+    <table>
+      <thead><tr><th>Workflow</th><th>Primary tool</th><th>FullStory signal(s)</th><th>Spec status</th></tr></thead>
+      <tbody>
+        <!-- {REPEAT:coverage_row} -->
+        <tr><td>{coverage_workflow}</td><td>{coverage_tool}</td><td>{coverage_signals}</td><td><span class="pill {coverage_pill}">{coverage_status}</span></td></tr>
+        <!-- {/REPEAT} -->
+      </tbody>
+    </table>
+    <div class="callout callout-info">
+      <strong>How the rollup is used.</strong> Start the analysis with the spec'd tool(s) for high-precision signal; "future tool spec" rows mark where URL-path fallback is still the only signal, so findings there stay directional until those tools are instrumented. Each future tool gets its own tab (same structure) in a later pass.
+    </div>
+
+    <h3>Dedup &amp; double-count guardrails</h3>
+    <ul style="font-size:13px;margin:8px 0 8px 20px">
+      <li>One workflow = one canonical event source. Where two tools touch the same workflow, the rollup names the canonical owner to avoid summing both.</li>
+      <li>Cross-tool handoffs are modeled as a single "linkage" event, not two independent creations.</li>
+      <li>Active-time per tool stays a directional floor, never summed across overlapping tabs.</li>
+    </ul>
+  </div>
+
+  <p class="footer">
+    <strong>{team_name} Rollup</strong> &mdash; consolidates per-tool specs by workflow. Adjacent tools shown for coverage planning.<br>
+    <strong>Prepared by:</strong> FullStory Solutions Engineering
+  </p>
+</div>
+</div>
+
+<script>
+function switchTab(tab) {
+  document.querySelectorAll('.section').forEach(function(s){ s.style.display = 'none'; });
+  document.getElementById('section-' + tab).style.display = 'block';
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  var btn = document.querySelector('.tab[data-tab="' + tab + '"]');
+  if (btn) btn.classList.add('active');
+  window.scrollTo(0, 0);
+}
+</script>
+
+</body>
+</html>

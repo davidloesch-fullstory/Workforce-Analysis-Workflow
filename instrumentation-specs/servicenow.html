@@ -1,0 +1,648 @@
+<!--
+  FullStory Workforce — INSTRUMENTATION SPEC (Pre-Flight Config) — ServiceNow EXEMPLAR
+  ====================================================================================
+  REFERENCE IMPLEMENTATION for the instrumentation-spec skill. This is the gold
+  standard for structure, depth, tone, citations, and SVG styling — the copy-from
+  example when generating a new instrumentation spec (parallel to how
+  blueprints/zendesk-response-assembly.html anchors the blueprint skill).
+
+  Output model mirrors the implementation-blueprint deliverable: ONE self-contained
+  tabbed HTML file (Overview + one tab per tool + a team rollup tab). All CSS inline;
+  no external deps. Style block shared with blueprint-template.html for visual consistency.
+
+  This document tells a FullStory admin WHAT to configure (pages, named elements,
+  defined events, custom properties) so that a later workforce analysis has
+  high-precision, tool-aware signal instead of relying on raw URL paths.
+  Depth = CONCEPTUAL: each item names the action + where it lives; the admin binds
+  the actual CSS selector / URL rule in their instance.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Example Org — FullStory Instrumentation Spec (ServiceNow)</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-alt: #f7f8fa;
+    --text: #1a1a2e;
+    --text-secondary: #64748b;
+    --border: #e2e8f0;
+    --accent: #6c5ce7;
+    --accent-light: #f0eeff;
+    --accent-dark: #4c3bcf;
+    --success: #10b981;
+    --success-bg: #ecfdf5;
+    --warning: #f59e0b;
+    --warning-bg: #fffbeb;
+    --danger: #ef4444;
+    --danger-bg: #fef2f2;
+    --info: #3b82f6;
+    --info-bg: #eff6ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: var(--text); background: var(--bg-alt); line-height: 1.6;
+  }
+
+  /* Tab Navigation */
+  .tab-bar {
+    position: sticky; top: 0; z-index: 100; background: white;
+    display: flex; justify-content: flex-start; flex-wrap: wrap;
+    border-bottom: 1px solid var(--border); padding: 0 16px; overflow-x: auto;
+  }
+  .tab {
+    padding: 14px 20px; font-size: 14px; font-weight: 500; white-space: nowrap;
+    color: var(--text-secondary); background: none; border: none;
+    border-bottom: 3px solid transparent; cursor: pointer;
+    transition: color 0.15s, border-color 0.15s; font-family: inherit;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  .tab .tab-rank {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 18px; height: 18px; border-radius: 50%; background: var(--bg-alt);
+    font-size: 10px; font-weight: 700; margin-right: 7px; color: var(--text-secondary);
+  }
+  .tab.active .tab-rank { background: var(--accent); color: white; }
+  .section-nav { padding: 16px 0 0; }
+  .section-nav button {
+    background: none; border: none; color: var(--accent);
+    font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; padding: 6px 0;
+  }
+  .section-nav button:hover { text-decoration: underline; }
+
+  .report-container { max-width: 1100px; margin: 0 auto; padding: 40px 32px 80px; background: var(--bg); }
+  .container { max-width: 1200px; margin: 0 auto; padding: 40px 32px 80px; }
+
+  h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+  h2 { font-size: 22px; font-weight: 600; margin: 32px 0 12px; }
+  h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; margin-top: 20px; }
+  .subtitle { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+  .section-subtitle { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+  /* Hero (Overview tab) */
+  .hero {
+    background: linear-gradient(135deg, #1a1a2e 0%, #2d2b55 50%, #6c5ce7 100%);
+    color: white; padding: 56px 32px 44px; text-align: center;
+  }
+  .hero h1 { font-size: 34px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; }
+  .hero .tagline { font-size: 17px; opacity: 0.85; margin-bottom: 24px; }
+  .hero-stats { display: flex; justify-content: center; gap: 48px; margin-top: 28px; flex-wrap: wrap; }
+  .hero-stat-value { font-size: 40px; font-weight: 800; line-height: 1; }
+  .hero-stat-label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; margin-top: 6px; }
+
+  /* Tool summary header band */
+  .bp-header { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin: 8px 0 24px; background: white; }
+  .bp-header-accent { height: 6px; width: 100%; background: linear-gradient(90deg, var(--accent), #a29bfe); }
+  .bp-header-body { padding: 22px 24px; }
+  .bp-header h1 { font-size: 24px; margin-bottom: 12px; }
+  .bp-meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 8px; }
+  .bp-meta-item { background: var(--bg-alt); border-radius: 8px; padding: 12px 14px; }
+  .bp-meta-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); }
+  .bp-meta-value { font-size: 15px; font-weight: 700; margin-top: 2px; }
+
+  /* Cards / pitch cards (overview) */
+  .cards-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin: 24px 0; }
+  .pitch-card { background: white; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; text-decoration: none; color: inherit; display: flex; flex-direction: column; cursor: pointer; }
+  .pitch-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(108,92,231,0.15); }
+  .pitch-card-accent { height: 6px; width: 100%; }
+  .pitch-card-body { padding: 22px; flex: 1; display: flex; flex-direction: column; }
+  .pitch-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; margin-top: 0; }
+  .pitch-card p { font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; flex: 1; }
+  .pitch-card-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .pitch-card-stat { background: var(--bg-alt); border-radius: 8px; padding: 10px; text-align: center; }
+  .pitch-card-stat-value { font-size: 18px; font-weight: 700; }
+  .pitch-card-stat-label { font-size: 10px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.3px; }
+  .pitch-card-cta { padding: 10px 16px; background: var(--bg-alt); border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--accent); text-align: center; }
+  .pitch-card:hover .pitch-card-cta { background: var(--accent-light); }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0; }
+  th { text-align: left; padding: 10px 12px; background: var(--bg-alt); border-bottom: 2px solid var(--border); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px; color: var(--text-secondary); }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .total-row td { background: var(--bg-alt); font-weight: 700; border-top: 2px solid var(--border); }
+  td.num, th.num { text-align: right; }
+
+  /* Callouts */
+  .callout { padding: 16px 20px; border-radius: 8px; font-size: 14px; line-height: 1.55; margin: 16px 0; }
+  .callout-info { background: var(--info-bg); border-left: 4px solid var(--info); }
+  .callout-success { background: var(--success-bg); border-left: 4px solid var(--success); }
+  .callout-warning { background: var(--warning-bg); border-left: 4px solid var(--warning); }
+  .callout-danger { background: var(--danger-bg); border-left: 4px solid var(--danger); }
+  .callout strong { font-weight: 700; }
+
+  /* Stat grids */
+  .stats-grid { display: grid; gap: 12px; margin: 16px 0; }
+  .stats-3 { grid-template-columns: repeat(3, 1fr); }
+  .stats-4 { grid-template-columns: repeat(4, 1fr); }
+  .stat { text-align: center; padding: 16px 12px; background: var(--bg-alt); border-radius: 8px; border: 1px solid var(--border); }
+  .stat-value { font-size: 26px; font-weight: 700; line-height: 1.2; }
+  .stat-label { font-size: 12px; color: var(--text-secondary); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* Pills */
+  .pill { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
+  .pill-success { background: var(--success-bg); color: #065f46; }
+  .pill-info { background: var(--info-bg); color: #1e40af; }
+  .pill-warning { background: var(--warning-bg); color: #92400e; }
+  .pill-danger { background: var(--danger-bg); color: #991b1b; }
+  .pill-neutral { background: var(--bg-alt); color: var(--text-secondary); }
+  .pill-accent { background: var(--accent-light); color: var(--accent-dark); }
+
+  /* Section anchors */
+  .bp-section { scroll-margin-top: 70px; }
+  .bp-section-num { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; background: var(--accent); color: white; font-size: 15px; font-weight: 700; margin-right: 10px; vertical-align: middle; }
+
+  /* Build step blocks */
+  .build-step { border: 1px solid var(--border); border-radius: 10px; margin: 14px 0; overflow: hidden; }
+  .build-step-head { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--bg-alt); border-bottom: 1px solid var(--border); }
+  .build-step-num { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: white; font-weight: 700; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+  .build-step-title { font-weight: 600; font-size: 14px; }
+  .build-step-body { padding: 16px; font-size: 13px; }
+
+  code.inline { background: var(--bg-alt); padding: 2px 6px; border-radius: 3px; font-size: 12px; word-break: break-all; font-family: 'SF Mono', ui-monospace, monospace; }
+
+  /* Source-grounding citation chips */
+  .src { font-size: 11px; }
+  .src a { color: var(--accent); text-decoration: none; }
+  .src a:hover { text-decoration: underline; }
+  .verify-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+  .verify-verified { background: var(--success-bg); color: #065f46; }
+  .verify-unverified { background: var(--warning-bg); color: #92400e; }
+  .verify-plangated { background: var(--info-bg); color: #1e40af; }
+
+  /* SVG flow diagram system (reused from blueprint .arch) */
+  .arch { width: 100%; margin: 16px 0; border: 1px solid var(--border); border-radius: 12px; background: white; padding: 8px; }
+  .arch svg { width: 100%; height: auto; display: block; }
+  .arch-legend { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; margin-top: 8px; padding-bottom: 6px; }
+  .arch-legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-secondary); }
+  .arch-legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+  .nd-trigger { fill: #f0eeff; stroke: #6c5ce7; }
+  .nd-middleware { fill: #1a1a2e; stroke: #2d2b55; }
+  .nd-external { fill: #eff6ff; stroke: #3b82f6; }
+  .nd-output { fill: #ecfeff; stroke: #06b6d4; }
+  .nd-human { fill: #ecfdf5; stroke: #10b981; }
+  .nd-label { font: 600 13px -apple-system, sans-serif; fill: var(--text); }
+  .nd-label-light { font: 600 13px -apple-system, sans-serif; fill: #ffffff; }
+  .nd-sub { font: 400 10px -apple-system, sans-serif; fill: var(--text-secondary); }
+  .nd-sub-light { font: 400 10px -apple-system, sans-serif; fill: #cbd5e1; }
+  .edge { stroke: #94a3b8; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+  .edge-label { font: 600 10px -apple-system, sans-serif; fill: var(--text-secondary); }
+
+  .footer { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-secondary); line-height: 1.5; }
+
+  /* Legend for FullStory definition types */
+  .deftype-key { display: flex; flex-wrap: wrap; gap: 10px; margin: 8px 0 16px; }
+
+  @media (max-width: 900px) {
+    .cards-grid { grid-template-columns: 1fr; }
+    .hero-stats { flex-direction: column; gap: 16px; }
+    .bp-meta { grid-template-columns: repeat(2, 1fr); }
+    .stats-4, .stats-3 { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media print {
+    body { background: white; }
+    .tab-bar, .section-nav { display: none; }
+    .section { display: block !important; page-break-before: always; }
+    .container, .report-container { padding: 20px; max-width: 100%; }
+    .build-step, .arch, table { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="tab-bar">
+  <button class="tab active" data-tab="overview" onclick="switchTab('overview')">Overview</button>
+  <button class="tab" data-tab="servicenow" onclick="switchTab('servicenow')"><span class="tab-rank">1</span>ServiceNow</button>
+  <button class="tab" data-tab="team" onclick="switchTab('team')"><span class="tab-rank">T</span>IT Service Desk Rollup</button>
+</div>
+
+<!-- ============================================================ OVERVIEW ============================================================ -->
+<div id="section-overview" class="section">
+  <div class="hero">
+    <h1>FullStory Instrumentation Spec</h1>
+    <p class="tagline">Example Org &mdash; IT Service Desk &mdash; Pre-Flight Configuration for ServiceNow</p>
+    <div class="hero-stats">
+      <div><div class="hero-stat-value">6</div><div class="hero-stat-label">Pages to Define</div></div>
+      <div><div class="hero-stat-value">12</div><div class="hero-stat-label">Named Elements</div></div>
+      <div><div class="hero-stat-value">9</div><div class="hero-stat-label">Defined Events</div></div>
+      <div><div class="hero-stat-value">10</div><div class="hero-stat-label">Custom Properties</div></div>
+    </div>
+  </div>
+  <div class="container">
+
+    <div class="callout callout-info">
+      <strong>What this document is.</strong> A pre-flight configuration plan. It tells a FullStory admin exactly which
+      <em>pages</em>, <em>named elements</em>, <em>defined events</em>, and <em>custom properties</em> to set up for a target tool
+      <strong>before</strong> a workforce automation analysis runs. Configuring these promotes the tool's signal from low-precision
+      URL-path inference to high-precision, action-level events &mdash; so the analysis measures real workflows instead of guessing from navigation.
+    </div>
+
+    <h2>How it fits the analysis</h2>
+    <p class="section-subtitle">Three parties, one loop. FullStory SE produces the spec, a FullStory admin configures it, and the analysis later consumes the new signals.</p>
+    <div class="arch">
+      <svg viewBox="0 0 1000 170" role="img" aria-label="Configure then capture then analyze flow">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"></path>
+          </marker>
+        </defs>
+        <!-- Node 1: Research / Spec (trigger) -->
+        <rect class="nd-trigger" x="8" y="50" width="150" height="64" rx="10"></rect>
+        <text class="nd-label" x="83" y="78" text-anchor="middle">Research + Spec</text>
+        <text class="nd-sub" x="83" y="96" text-anchor="middle">SE: this document</text>
+        <!-- edge -->
+        <path class="edge" d="M 158 82 L 232 82"></path>
+        <text class="edge-label" x="195" y="74" text-anchor="middle">hand off</text>
+        <!-- Node 2: Configure (human) -->
+        <rect class="nd-human" x="234" y="50" width="170" height="64" rx="10"></rect>
+        <text class="nd-label" x="319" y="74" text-anchor="middle">Configure in FullStory</text>
+        <text class="nd-sub" x="319" y="92" text-anchor="middle">Admin: Data Studio</text>
+        <text class="nd-sub" x="319" y="106" text-anchor="middle">(manual handoff)</text>
+        <!-- edge -->
+        <path class="edge" d="M 404 82 L 478 82"></path>
+        <text class="edge-label" x="441" y="74" text-anchor="middle">capture</text>
+        <!-- Node 3: Capture (output) -->
+        <rect class="nd-output" x="480" y="50" width="150" height="64" rx="10"></rect>
+        <text class="nd-label" x="555" y="78" text-anchor="middle">Capture Window</text>
+        <text class="nd-sub" x="555" y="96" text-anchor="middle">~2&ndash;4 weeks of data</text>
+        <!-- edge -->
+        <path class="edge" d="M 630 82 L 704 82"></path>
+        <text class="edge-label" x="667" y="74" text-anchor="middle">query</text>
+        <!-- Node 4: Analyze (middleware/dark) -->
+        <rect class="nd-middleware" x="706" y="50" width="180" height="64" rx="10"></rect>
+        <text class="nd-label-light" x="796" y="78" text-anchor="middle">Workforce Analysis</text>
+        <text class="nd-sub-light" x="796" y="96" text-anchor="middle">events = primary signal</text>
+        <!-- loop back -->
+        <path class="edge" d="M 886 114 C 886 150, 83 150, 83 118"></path>
+        <text class="edge-label" x="485" y="146" text-anchor="middle">findings inform the next instrumentation pass</text>
+      </svg>
+      <div class="arch-legend">
+        <div class="arch-legend-item"><span class="arch-legend-dot" style="background:#6c5ce7"></span>SE deliverable</div>
+        <div class="arch-legend-item"><span class="arch-legend-dot" style="background:#10b981"></span>Human step</div>
+        <div class="arch-legend-item"><span class="arch-legend-dot" style="background:#06b6d4"></span>Capture</div>
+        <div class="arch-legend-item"><span class="arch-legend-dot" style="background:#1a1a2e"></span>Analysis</div>
+      </div>
+    </div>
+
+    <div class="callout callout-warning">
+      <strong>The handoff is human.</strong> FullStory's analysis tooling can <em>discover</em> and <em>query</em> definitions, but it cannot
+      <em>create</em> them. A FullStory admin must configure the items in this spec via Data Studio (Data Management). This document is the
+      build sheet for that step.
+      <span class="src">Source: <a href="https://help.fullstory.com/hc/en-us/articles/20862510707351-Create-elements-events-and-pages-with-Data-Studio" target="_blank">FullStory &mdash; Create elements, events, and pages with Data Studio</a></span>
+    </div>
+
+    <h2>What's covered</h2>
+    <p class="section-subtitle">A tool-deep spec for ServiceNow, plus a team rollup that shows where ServiceNow sits in the IT Service Desk's wider tool set.</p>
+    <div class="cards-grid">
+      <div class="pitch-card" onclick="switchTab('servicenow')">
+        <div class="pitch-card-accent" style="background: linear-gradient(90deg, #6c5ce7, #a29bfe)"></div>
+        <div class="pitch-card-body">
+          <h3>ServiceNow &mdash; Tool Spec</h3>
+          <p>Incident management across Service Operations Workspace and classic UI16. Pages, elements, events, and properties that capture the manual triage / resolve / wrap-up lifecycle.</p>
+          <div class="pitch-card-stats">
+            <div class="pitch-card-stat"><div class="pitch-card-stat-value" style="color:#6c5ce7">9</div><div class="pitch-card-stat-label">Defined Events</div></div>
+            <div class="pitch-card-stat"><div class="pitch-card-stat-value">ITSM</div><div class="pitch-card-stat-label">Incident</div></div>
+          </div>
+          <div class="pitch-card-cta">Open Tool Spec &rarr;</div>
+        </div>
+      </div>
+      <div class="pitch-card" onclick="switchTab('team')">
+        <div class="pitch-card-accent" style="background: linear-gradient(90deg, #06b6d4, #67e8f9)"></div>
+        <div class="pitch-card-body">
+          <h3>IT Service Desk &mdash; Rollup</h3>
+          <p>How ServiceNow's signals consolidate with adjacent tools the team touches (Jira, Slack, monitoring consoles), deduped by workflow so the analysis has full coverage.</p>
+          <div class="pitch-card-stats">
+            <div class="pitch-card-stat"><div class="pitch-card-stat-value" style="color:#06b6d4">4</div><div class="pitch-card-stat-label">Tools in Scope</div></div>
+            <div class="pitch-card-stat"><div class="pitch-card-stat-value">1</div><div class="pitch-card-stat-label">Spec'd Now</div></div>
+          </div>
+          <div class="pitch-card-cta">Open Rollup &rarr;</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="footer">
+      <strong>FullStory Workforce &mdash; Instrumentation Spec (Pre-Flight)</strong> &mdash; Example Org &mdash; ServiceNow exemplar<br>
+      Conceptual depth: each item names the action and where it lives; the admin binds the CSS selector / URL rule in their instance.
+      Platform specifics verified against live vendor documentation where cited.<br><br>
+      Prepared by FullStory Solutions Engineering
+    </p>
+  </div>
+</div>
+
+<!-- ============================================================ SERVICENOW TOOL SPEC ============================================================ -->
+<div id="section-servicenow" class="section" style="display:none">
+<div class="report-container">
+  <div class="section-nav"><button onclick="switchTab('overview')">&larr; Back to Overview</button></div>
+
+  <div class="bp-header">
+    <div class="bp-header-accent"></div>
+    <div class="bp-header-body">
+      <h1>ServiceNow &mdash; Instrumentation Spec</h1>
+      <div class="bp-meta">
+        <div class="bp-meta-item"><div class="bp-meta-label">Product</div><div class="bp-meta-value">ITSM (Incident)</div></div>
+        <div class="bp-meta-item"><div class="bp-meta-label">Surfaces</div><div class="bp-meta-value">SOW + UI16</div></div>
+        <div class="bp-meta-item"><div class="bp-meta-label">Depth</div><div class="bp-meta-value">Conceptual</div></div>
+        <div class="bp-meta-item"><div class="bp-meta-label">Definitions</div><div class="bp-meta-value">6 / 12 / 9 / 10</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="deftype-key">
+    <span class="pill pill-accent">Page</span>
+    <span class="pill pill-info">Named Element</span>
+    <span class="pill pill-success">Defined Event</span>
+    <span class="pill pill-neutral">Property</span>
+    <span class="verify-badge verify-verified">Verified vs docs</span>
+    <span class="verify-badge verify-plangated">Plan-gated (native AI)</span>
+    <span class="verify-badge verify-unverified">Instance-specific</span>
+  </div>
+
+  <!-- SECTION 1: SURFACES -->
+  <div class="bp-section" id="sn-surfaces">
+    <h2><span class="bp-section-num">1</span>Surfaces &amp; The Discipline They Force</h2>
+    <p style="font-size:13px;color:var(--text-secondary)">ServiceNow renders the <strong>same Incident table</strong> through multiple UIs, each with its own configurable form views. A "category dropdown" is a different DOM node in Service Operations Workspace than in classic UI16, so named elements must be scoped per surface.</p>
+    <table>
+      <thead><tr><th>Surface</th><th>What lives here</th><th>Notes for instrumentation</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Service Operations Workspace (SOW)</strong></td><td>Agent home, list view, incident record (e.g. the "SOW - Incident - Overview" view), contextual side panel / Agent Assist</td><td>Modern workspace UI; component-based DOM. Form layout edited via record <code class="inline">Additional Actions &gt; Configure &gt; Form Designer</code>.</td></tr>
+        <tr><td><strong>Classic UI16</strong></td><td>Standard list &amp; form views of the Incident table, related lists, UI actions</td><td>Stable form/list structure; many orgs still fulfill here. Different selectors than SOW.</td></tr>
+        <tr><td><strong>CSM Workspace</strong> (if used)</td><td>Case management equivalent of SOW</td><td>Same modeling approach; out of scope for this ITSM example.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout callout-warning">
+      <strong>Why conceptual depth is the right call here.</strong> FullStory named elements bind to <em>CSS selectors</em>. SOW's
+      component-driven DOM can produce volatile selectors, so this spec names the <em>action and its surface</em> and leaves selector
+      binding to the admin in-instance (using Inspect Mode on a real session). Confirm each element on both SOW and UI16 if agents use both.
+      <span class="src">Source: <a href="https://help.fullstory.com/hc/en-us/articles/360051664454-Define-Events-in-Fullstory" target="_blank">FullStory &mdash; naming elements applies to CSS selectors only</a> &middot; <a href="https://www.servicenow.com/community/incident-management-sow-forum/how-to-edit-details-tab-of-incident-in-sow-workspace/m-p/3468617" target="_blank">SN Community &mdash; SOW Incident form views</a></span>
+      <span class="verify-badge verify-verified">Verified vs docs</span>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECTION 2: PAGES -->
+  <div class="bp-section" id="sn-pages">
+    <h2><span class="bp-section-num">2</span>Pages to Define <span class="pill pill-accent">Page</span></h2>
+    <p class="section-subtitle">URL-rule groupings so navigation maps to meaningful destinations. Patterns below are illustrative &mdash; ServiceNow URLs are instance-specific (<code class="inline">&lt;instance&gt;.service-now.com</code>); confirm exact paths in your instance. FullStory URL rules support <code class="inline">*</code>, <code class="inline">**</code>, and <code class="inline">[]</code>.</p>
+    <table>
+      <thead><tr><th>Page name</th><th>Illustrative URL rule</th><th>Why it matters</th><th>Verify</th></tr></thead>
+      <tbody>
+        <tr><td>Incident &mdash; Queue / List</td><td><code class="inline">**/now/sow/list/**incident**</code></td><td>Queue navigation &amp; polling baseline</td><td><span class="verify-badge verify-unverified">Instance-specific</span></td></tr>
+        <tr><td>Incident &mdash; Record (SOW)</td><td><code class="inline">**/now/sow/record/incident/*</code></td><td>Core fulfillment surface; per-ticket time</td><td><span class="verify-badge verify-unverified">Instance-specific</span></td></tr>
+        <tr><td>Incident &mdash; Record (UI16)</td><td><code class="inline">**/incident.do*</code> / <code class="inline">**/nav_to.do*incident*</code></td><td>Classic fulfillment surface</td><td><span class="verify-badge verify-unverified">Instance-specific</span></td></tr>
+        <tr><td>Knowledge &mdash; Search / Article</td><td><code class="inline">**/kb**</code></td><td>Knowledge usage vs. avoidance</td><td><span class="verify-badge verify-unverified">Instance-specific</span></td></tr>
+        <tr><td>Service Catalog / Request</td><td><code class="inline">**/sc_req_item**</code> / <code class="inline">**/com.glideapp.servicecatalog**</code></td><td>Request fulfillment workload</td><td><span class="verify-badge verify-unverified">Instance-specific</span></td></tr>
+        <tr><td>Change Request</td><td><code class="inline">**/change_request.do*</code></td><td>Change workload (Advanced tier feature)</td><td><span class="verify-badge verify-unverified">Instance-specific</span></td></tr>
+      </tbody>
+    </table>
+    <div class="src">Page rule syntax: <a href="https://help.fullstory.com/hc/en-us/articles/4407267904791-User-Defined-Pages" target="_blank">FullStory &mdash; User-Defined Pages (URL rules: * ** [])</a> <span class="verify-badge verify-verified">Verified vs docs</span></div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECTION 3: NAMED ELEMENTS -->
+  <div class="bp-section" id="sn-elements">
+    <h2><span class="bp-section-num">3</span>Named Elements to Capture <span class="pill pill-info">Named Element</span></h2>
+    <p class="section-subtitle">The specific controls whose use signals a decision or manual action. Named per surface; the admin binds the selector via Inspect Mode.</p>
+    <table>
+      <thead><tr><th>Element</th><th>Where it lives</th><th>Action it represents</th></tr></thead>
+      <tbody>
+        <tr><td>Category selector</td><td>Incident form (SOW + UI16)</td><td>Manual classification</td></tr>
+        <tr><td>Subcategory selector</td><td>Incident form (dependent on Category)</td><td>Manual sub-classification</td></tr>
+        <tr><td>Impact selector</td><td>Incident form</td><td>Sets one half of derived Priority</td></tr>
+        <tr><td>Urgency selector</td><td>Incident form</td><td>Sets other half of derived Priority</td></tr>
+        <tr><td>Assignment Group field</td><td>Incident form</td><td>Manual routing to a team</td></tr>
+        <tr><td>Assigned to field</td><td>Incident form</td><td>Manual routing to a person</td></tr>
+        <tr><td>"Assign to me" action</td><td>List view / form Actions menu</td><td>Self-assignment grab</td></tr>
+        <tr><td>Work Notes input</td><td>Incident activity stream</td><td>Internal documentation</td></tr>
+        <tr><td>Additional Comments input</td><td>Incident activity stream</td><td>Customer-facing reply</td></tr>
+        <tr><td>Resolution / Close Notes field</td><td>Resolution section / Resolve dialog</td><td>Wrap-up documentation</td></tr>
+        <tr><td>Resolve / Close button</td><td>Form UI action</td><td>Disposition</td></tr>
+        <tr><td>Knowledge / AI Search box</td><td>Agent Assist side panel</td><td>Knowledge lookup</td></tr>
+      </tbody>
+    </table>
+    <div class="src">Incident fields (Category/Subcategory dependency, Impact+Urgency&rarr;Priority, Assignment Group/Assigned to, "Assign to me"): <a href="https://www.servicenow.com/community/itsm-articles/frequently-asked-questions-to-get-you-started-with-incident/ta-p/2313042" target="_blank">SN Community &mdash; Incident FAQ</a> <span class="verify-badge verify-verified">Verified vs docs</span></div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECTION 4: DEFINED EVENTS -->
+  <div class="bp-section" id="sn-events">
+    <h2><span class="bp-section-num">4</span>Defined Events <span class="pill pill-success">Defined Event</span></h2>
+    <p class="section-subtitle">The high-level "an agent did X" signals. Each is built from a named element and/or page criteria (conceptual). The right two columns connect each event to the automation hypothesis it would support and to ServiceNow's own native AI workflow, so the analysis can frame build-vs-buy.</p>
+    <table>
+      <thead><tr><th>Defined Event</th><th>Built from (conceptual)</th><th>Workflow measured</th><th>Automation hypothesis</th><th>Maps to native ServiceNow</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Incident Categorized</strong></td>
+          <td>Change on Category / Subcategory selector on Incident record</td>
+          <td>Manual triage classification</td>
+          <td>Auto-categorization from short description</td>
+          <td><span class="pill pill-info">Triage &amp; Categorize</span> <span class="verify-badge verify-plangated">Advanced</span></td>
+        </tr>
+        <tr>
+          <td><strong>Incident (Re)Prioritized</strong></td>
+          <td>Change on Impact + Urgency selectors (Priority is read-only, derived via <code class="inline">dl_u_priority</code>)</td>
+          <td>Manual prioritization</td>
+          <td>Auto-prioritize via lookup / AI</td>
+          <td><span class="pill pill-info">Triage &amp; Categorize</span> <span class="verify-badge verify-plangated">Advanced</span></td>
+        </tr>
+        <tr>
+          <td><strong>Incident Assigned / Reassigned</strong></td>
+          <td>Change on Assignment Group / Assigned to; "Assign to me" click</td>
+          <td>Manual routing</td>
+          <td>Assignment Lookup Rules / smart routing</td>
+          <td><span class="pill pill-neutral">Assignment Lookup (OOTB)</span> <span class="verify-badge verify-verified">Verified</span></td>
+        </tr>
+        <tr>
+          <td><strong>Resolution Notes Entered</strong></td>
+          <td>Input into Resolution / Close Notes field</td>
+          <td>Wrap-up documentation</td>
+          <td>AI-drafted resolution notes</td>
+          <td><span class="pill pill-info">Wrap Up &amp; Resolve</span> <span class="verify-badge verify-plangated">Advanced</span></td>
+        </tr>
+        <tr>
+          <td><strong>Incident Resolved / Closed</strong></td>
+          <td>Resolve/Close button + State change to Resolved/Closed</td>
+          <td>Disposition</td>
+          <td>Auto-close eligible incidents</td>
+          <td><span class="pill pill-info">Wrap Up &amp; Resolve</span> <span class="verify-badge verify-plangated">Advanced</span></td>
+        </tr>
+        <tr>
+          <td><strong>Knowledge Searched</strong></td>
+          <td>Use of AI Search box in Agent Assist panel</td>
+          <td>Knowledge lookup effort</td>
+          <td>Auto-surface relevant KB / past cases</td>
+          <td><span class="pill pill-info">Investigate &amp; Resolve</span> <span class="verify-badge verify-plangated">Advanced</span></td>
+        </tr>
+        <tr>
+          <td><strong>Past Incident Referenced</strong></td>
+          <td>Navigation to a related/similar incident record from an open incident</td>
+          <td>Context hunting across tickets</td>
+          <td>Similar-case surfacing</td>
+          <td><span class="pill pill-info">Investigate &amp; Resolve</span> <span class="verify-badge verify-plangated">Advanced</span></td>
+        </tr>
+        <tr>
+          <td><strong>Queue Filtered / Refreshed</strong></td>
+          <td>List filter / personalize / refresh controls on Incident list</td>
+          <td>Queue management overhead</td>
+          <td>Smart queue / push assignment</td>
+          <td><span class="pill pill-neutral">List config (OOTB)</span> <span class="verify-badge verify-verified">Verified</span></td>
+        </tr>
+        <tr>
+          <td><strong>Work Note vs Comment</strong></td>
+          <td>Input into Work Notes vs Additional Comments</td>
+          <td>Internal vs customer communication mix</td>
+          <td>Signal-quality dimension (not itself automated)</td>
+          <td><span class="pill pill-neutral">&mdash;</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="callout callout-info">
+      <strong>Native-AI mapping caveat.</strong> The "Triage &amp; Categorize," "Investigate &amp; Resolve," and "Wrap Up &amp; Resolve"
+      agentic workflows are configured in AI Agent Studio and surfaced in the Now Assist Panel. As of ServiceNow's 9 Apr 2026 repackaging,
+      Now Assist GenAI is bundled across the Foundation / Advanced / Prime ITSM tiers; <strong>agentic workflows land at the Advanced tier</strong>,
+      and fully autonomous AI Agents / the L1 Service Desk AI Specialist are <strong>Prime</strong>. Confirm the org's tier before recommending "enable native."
+      <span class="src">Sources: <a href="https://www.servicenow.com/community/now-assist-articles/agentic-workflows-end-to-end-setup-guide/ta-p/3489031" target="_blank">SN &mdash; Agentic Workflows setup</a> &middot; <a href="https://www.servicenow.com/products/itsm/pricing.html" target="_blank">SN &mdash; ITSM pricing (Foundation/Advanced/Prime)</a></span>
+      <span class="verify-badge verify-plangated">Plan-gated</span>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECTION 5: CUSTOM PROPERTIES -->
+  <div class="bp-section" id="sn-props">
+    <h2><span class="bp-section-num">5</span>Custom Properties to Capture <span class="pill pill-neutral">Property</span></h2>
+    <p class="section-subtitle">Dimensions worth attaching to the events above so the analysis can slice by them (e.g., "categorization time by priority").</p>
+    <table>
+      <thead><tr><th>Property</th><th>On which events</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>priority (derived)</td><td>Prioritized, Resolved</td><td>Slice effort by criticality</td></tr>
+        <tr><td>impact</td><td>Prioritized</td><td>Half of priority derivation</td></tr>
+        <tr><td>urgency</td><td>Prioritized</td><td>Half of priority derivation</td></tr>
+        <tr><td>category / subcategory</td><td>Categorized, Resolved</td><td>Which work types dominate</td></tr>
+        <tr><td>assignment_group</td><td>Assigned, Resolved</td><td>Routing patterns by team</td></tr>
+        <tr><td>state</td><td>Resolved/Closed</td><td>Disposition outcome</td></tr>
+        <tr><td>channel / contact_type</td><td>all</td><td>Phone / email / portal / chat origin</td></tr>
+        <tr><td>reassignment_count</td><td>Assigned</td><td>Routing churn / misroutes</td></tr>
+        <tr><td>reopen_count</td><td>Resolved</td><td>Quality of resolution</td></tr>
+        <tr><td>has_kb_attached</td><td>Resolved</td><td>Knowledge reuse rate</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECTION 6: HOW TO CONFIGURE -->
+  <div class="bp-section" id="sn-configure">
+    <h2><span class="bp-section-num">6</span>How to Configure in FullStory</h2>
+    <p class="section-subtitle">The admin handoff. All of this is no-code via Data Studio (Data Management). Order matters: pages &rarr; elements &rarr; events that reference them.</p>
+
+    <div class="build-step">
+      <div class="build-step-head"><span class="build-step-num">1</span><span class="build-step-title">Define Pages</span> <span class="verify-badge verify-verified">Verified vs docs</span></div>
+      <div class="build-step-body">
+        Go to <code class="inline">Settings &gt; Data Management &gt; Pages</code> &rarr; <strong>Create Page</strong>. Add each page from Section 2 using URL rules (<code class="inline">*</code>, <code class="inline">**</code>, <code class="inline">[]</code>). Paste a real instance URL into the search box first to check for conflicts (rules are mutually exclusive).
+        <div class="src">Source: <a href="https://help.fullstory.com/hc/en-us/articles/360052331173-Pages-in-Fullstory" target="_blank">FullStory &mdash; Pages</a></div>
+      </div>
+    </div>
+
+    <div class="build-step">
+      <div class="build-step-head"><span class="build-step-num">2</span><span class="build-step-title">Name Elements</span> <span class="verify-badge verify-verified">Verified vs docs</span></div>
+      <div class="build-step-body">
+        Open a recorded ServiceNow agent session &rarr; <code class="inline">Page Insights &gt; Inspect Mode</code> &rarr; click the control (e.g. Category selector) &rarr; name it in Data Studio. Repeat per surface (SOW vs UI16) where agents work in both. The name maps to a CSS selector (<code class="inline">element_definition_id</code>).
+        <div class="src">Source: <a href="https://help.fullstory.com/hc/en-us/articles/20862510707351-Create-elements-events-and-pages-with-Data-Studio" target="_blank">FullStory &mdash; Data Studio</a> &middot; <a href="https://developer.fullstory.com/anywhere/warehouse/element-definitions/" target="_blank">Element Definitions</a></div>
+      </div>
+    </div>
+
+    <div class="build-step">
+      <div class="build-step-head"><span class="build-step-num">3</span><span class="build-step-title">Define Events</span> <span class="verify-badge verify-verified">Verified vs docs</span></div>
+      <div class="build-step-body">
+        In <code class="inline">Settings &gt; Data Management &gt; Events</code> &rarr; <strong>Create Event</strong> (or "Define event" from Inspect Mode / the event builder). Compose each event from Section 4 by referencing the named element plus page scope &mdash; e.g. <em>clicked element "Resolve button" when Visited URL matches "Incident &mdash; Record"</em>. Attach the Section 5 properties.
+        <div class="src">Source: <a href="https://help.fullstory.com/hc/en-us/articles/360051664454-Define-Events-in-Fullstory" target="_blank">FullStory &mdash; Define Events</a></div>
+      </div>
+    </div>
+
+    <div class="callout callout-success">
+      <strong>Then let it capture.</strong> Allow ~2&ndash;4 weeks of data accumulation before the analysis so volumes are meaningful. After that, the workforce analysis discovers these by name (<code class="inline">discover_org_context</code>) and builds metrics directly on them &mdash; promoting them from "enrichment" to <strong>primary signal</strong>, which is exactly what eliminates URL-tokenization guesswork.
+    </div>
+  </div>
+
+  <p class="footer">
+    <strong>ServiceNow Instrumentation Spec</strong> &mdash; conceptual depth. URL rules and selectors are instance-specific and must be confirmed in-instance.
+    Native-AI mappings reflect ServiceNow's Apr 2026 Foundation/Advanced/Prime packaging and require tier confirmation.<br>
+    <strong>Prepared by:</strong> FullStory Solutions Engineering
+  </p>
+</div>
+</div>
+
+<!-- ============================================================ TEAM ROLLUP ============================================================ -->
+<div id="section-team" class="section" style="display:none">
+<div class="report-container">
+  <div class="section-nav"><button onclick="switchTab('overview')">&larr; Back to Overview</button></div>
+
+  <div class="bp-header">
+    <div class="bp-header-accent" style="background: linear-gradient(90deg, #06b6d4, #67e8f9)"></div>
+    <div class="bp-header-body">
+      <h1>IT Service Desk &mdash; Team Rollup</h1>
+      <div class="bp-meta">
+        <div class="bp-meta-item"><div class="bp-meta-label">Primary Tool</div><div class="bp-meta-value">ServiceNow</div></div>
+        <div class="bp-meta-item"><div class="bp-meta-label">Tools in Scope</div><div class="bp-meta-value">4</div></div>
+        <div class="bp-meta-item"><div class="bp-meta-label">Spec'd Now</div><div class="bp-meta-value">1 (ServiceNow)</div></div>
+        <div class="bp-meta-item"><div class="bp-meta-label">Coverage Model</div><div class="bp-meta-value">By Workflow</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bp-section">
+    <h2><span class="bp-section-num">T</span>Workflow Coverage Across the Team's Stack</h2>
+    <p class="section-subtitle">The IT Service Desk lives mostly in ServiceNow, but a full automation picture needs the adjacent tools agents switch into. This view deduplicates by <em>workflow</em> so two tools instrumenting the same activity don't double-count.</p>
+    <table>
+      <thead><tr><th>Workflow</th><th>Primary tool</th><th>FullStory signal(s)</th><th>Spec status</th></tr></thead>
+      <tbody>
+        <tr><td>Triage &amp; classify incoming work</td><td>ServiceNow</td><td>Incident Categorized, (Re)Prioritized</td><td><span class="pill pill-success">Spec'd</span></td></tr>
+        <tr><td>Routing / assignment</td><td>ServiceNow</td><td>Incident Assigned/Reassigned</td><td><span class="pill pill-success">Spec'd</span></td></tr>
+        <tr><td>Diagnose / find context</td><td>ServiceNow + Confluence/KB</td><td>Knowledge Searched, Past Incident Referenced</td><td><span class="pill pill-success">Spec'd</span> <span class="pill pill-neutral">KB future</span></td></tr>
+        <tr><td>Resolve &amp; document</td><td>ServiceNow</td><td>Resolution Notes Entered, Resolved/Closed</td><td><span class="pill pill-success">Spec'd</span></td></tr>
+        <tr><td>Engineering escalation / bug linkage</td><td>Jira</td><td>Issue created/linked from incident</td><td><span class="pill pill-warning">Future tool spec</span></td></tr>
+        <tr><td>Major-incident comms / coordination</td><td>Slack</td><td>War-room messages, status updates</td><td><span class="pill pill-warning">Future tool spec</span></td></tr>
+        <tr><td>Alert intake / acknowledgement</td><td>Monitoring console</td><td>Alert ack, alert&rarr;incident handoff</td><td><span class="pill pill-warning">Future tool spec</span></td></tr>
+      </tbody>
+    </table>
+    <div class="callout callout-info">
+      <strong>How the rollup is used.</strong> Start the analysis with the spec'd tool (ServiceNow) for high-precision signal; the "future tool spec"
+      rows tell you where URL-path fallback is still the only signal, so findings there are treated as directional until those tools are instrumented.
+      Each future tool would get its own tab (same structure as the ServiceNow tab) in a later pass.
+    </div>
+
+    <h3>Dedup &amp; double-count guardrails</h3>
+    <ul style="font-size:13px;margin:8px 0 8px 20px">
+      <li>One workflow = one canonical event source. Where two tools touch the same workflow (e.g. ServiceNow + Jira on escalation), the rollup names the canonical owner to avoid summing both.</li>
+      <li>Cross-tool handoffs (incident &rarr; Jira issue) are modeled as a single "linkage" event, not two independent creations.</li>
+      <li>Active-time per tool stays a directional floor, never summed across overlapping tabs.</li>
+    </ul>
+  </div>
+
+  <p class="footer">
+    <strong>IT Service Desk Rollup</strong> &mdash; consolidates per-tool specs by workflow. Adjacent tools shown for coverage planning; only ServiceNow is fully spec'd in this example.<br>
+    <strong>Prepared by:</strong> FullStory Solutions Engineering
+  </p>
+</div>
+</div>
+
+<script>
+function switchTab(tab) {
+  document.querySelectorAll('.section').forEach(function(s){ s.style.display = 'none'; });
+  document.getElementById('section-' + tab).style.display = 'block';
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  var btn = document.querySelector('.tab[data-tab="' + tab + '"]');
+  if (btn) btn.classList.add('active');
+  window.scrollTo(0, 0);
+}
+</script>
+
+</body>
+</html>
