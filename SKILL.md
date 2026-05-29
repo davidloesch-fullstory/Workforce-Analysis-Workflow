@@ -22,6 +22,7 @@ The analysis runs in 7 phases per team/business unit:
 
 | Phase | Purpose | Primary Tools |
 |-------|---------|---------------|
+| 0 (opt) | Instrumentation Pre-Flight — spec pages/elements/events to configure first | `instrumentation-spec` skill, `WebSearch` |
 | 0 | Orientation — discover tools, users, scope teams | `build_metric`, `discover_org_context` |
 | 0.5 | Metric Persistence — save/reference metrics for benchmarking | `get_metric` (if referencing) |
 | 1 | Quantitative Discovery — volumes, signals | `build_metric`, `compute_metric`, `discover_org_context` |
@@ -29,6 +30,30 @@ The analysis runs in 7 phases per team/business unit:
 | 3 | Synthesis — score and rank candidates | Analysis of Phase 1 + 2 outputs |
 | 4 | Deliverable — generate HTML report | Write using report-template.html |
 | 5 | Post-Implementation Measurement — before/after proof | `get_metric`, `compute_metric`, `get_sessions` |
+
+---
+
+## Phase 0 (optional): Instrumentation Pre-Flight
+
+Goal: When an org is willing to configure FullStory before the analysis, raise
+signal quality by defining tool-aware pages, named elements, and defined events
+up front — so the analysis runs on high-precision, action-level events instead
+of URL-path inference.
+
+Trigger this when a user names a tool (or team) they want to evaluate and asks
+what to configure/instrument first, or when an upcoming analysis would benefit
+from richer signal on a specific tool.
+
+Use the **`instrumentation-spec`** skill (see [instrumentation-spec.md](instrumentation-spec.md)).
+It researches the tool's real workflows, then produces a single tabbed HTML build
+sheet (Overview + one tab per tool + a team rollup) telling a FullStory admin
+exactly which pages, named elements, defined events, and custom properties to
+create in Data Studio. Note the handoff is human — the analysis tooling can
+discover and query definitions but cannot create them. After the admin configures
+the spec and ~2-4 weeks of capture accumulate, proceed to Phase 0 Orientation;
+the new definitions surface via `discover_org_context` and become primary signal.
+
+Reference example: `instrumentation-specs/servicenow.html`.
 
 ---
 
