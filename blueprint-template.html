@@ -394,8 +394,13 @@
     </ul>
     <div class="evidence">
       <div class="evidence-label">Watch It Happen</div>
+      <!--
+        {session_deeplink_url} = https://app.fullstory.com/ui/{org-id}/session/{device-id}:{session-id}:{absolute_ms}
+        — appending :{absolute_ms} deep-links to the exact moment (no scrubbing).
+        {timestamp} = mm:ss label; {clip_description} = the note for that moment.
+      -->
       <!-- {REPEAT:evidence_clip} -->
-      <a class="clip-link" href="{session_url}" target="_blank"><span class="ts">&#9654; {timestamp}</span> {clip_description}</a>
+      <a class="clip-link" href="{session_deeplink_url}" target="_blank"><span class="ts">&#9654; {timestamp}</span> {clip_description}</a>
       <!-- {/REPEAT} -->
     </div>
     <div class="callout callout-warning"><strong>The Human Cost:</strong> {human_cost}</div>

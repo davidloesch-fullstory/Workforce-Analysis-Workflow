@@ -44,7 +44,8 @@ Before starting, confirm you have:
    - Time estimate (events x time-per-event = hours/month)
    - Automation level (Fully Automated, AI-Assisted, Process Automated)
    - Session evidence (behavioral patterns observed)
-   - Session URLs with timestamps
+   - Session deep-link URLs (`…/session/{device-id}:{session-id}:{absolute_ms}`,
+     jumping to the exact moment) + a one-line note per clip
 
 2. **The customer's tool stack** — which platform the opportunity lives in
    (e.g., Zendesk, Salesforce, Outreach, Gong). Confirm with the user if

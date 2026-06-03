@@ -6,7 +6,65 @@
   
   Placeholders use the format: {PLACEHOLDER_NAME}
   Repeating sections use the format: {REPEAT:section_name} ... {/REPEAT}
-  
+
+  REQUIRED window placeholders (must be the SAME absolute strings everywhere):
+    {analysis_window} — absolute date range, e.g. "May 2 – Jun 1, 2026"
+                        (never a relative phrase like "last 30 days")
+    {as_of}           — computation timestamp + timezone, e.g. "2026-06-02 09:00 PT"
+  These appear in the hero, Methodology tab, each team subtitle, the
+  Measurement & Proof intro, and the footers. Every linked metric must be
+  pinned to {analysis_window} so its value matches the report (see SKILL.md
+  Phase 0.0).
+
+  Per-team SCOPING placeholders (hybrid model — see SKILL.md Phase 0.2/0.4.2):
+    {scope_class}  — "people" or "cluster" (drives the badge color)
+    {scope_label}  — e.g. "People-scoped · department=Support · 34 members"
+                     or "Tool-cluster (inferred from tool usage)"
+    {primary_tool}  — name of the team's primary tool (e.g. "Zendesk")
+    {primary_tool_adoption_html} — team's share of its primary tool's traffic,
+                     PLUS the active/focused work-type ratio (input- vs read-heavy)
+  People-scoped teams render the "Where {team}'s Time Goes" + adoption sections;
+  tool-cluster teams omit those and instead render the scope caveat at the tab
+  end. The Friction & Errors table (friction_* placeholders) is always-on.
+
+  Tool Volume Breakdown (per-team tab) — the "how to read these cards" aside is
+  static (keep as-is). Fill {volume_scope_note} with the team's scope: for
+  people-scoped teams "Scoped to {team_name} members (segment)."; for tool-
+  cluster teams the inferred-roster caveat.
+
+  Baseline Metrics rows (Measurement & Proof tab) — per metric, composed from
+  the ledger (no new computation; see SKILL.md Phase 4):
+    {metric_calc}  — HOW IT'S CALCULATED, one sentence from the ledger's Output
+                     Type + Query + Window + Segment ID + Time Property. Shown
+                     in the ⓘ hover tooltip next to the Signal Name.
+    {metric_role}  — HOW IT'S USED, one always-visible sentence from the ledger
+                     Blueprint Role (primary signal → names the savings calc it
+                     feeds; baseline context → states it's framing only).
+    {role_class}   — "primary" or "context" (drives pill + role-line color).
+
+  Per-team RICH CONTENT scaffolds (each team tab — fill from Phase 1/2 data;
+  every one is a populated EXAMPLE — replace numbers/labels/coordinates, or
+  delete a block if that team genuinely has nothing for it. See SKILL.md Phase 4):
+    - "Where Time Goes: {primary_tool}" — top-paths bar breakdown + an inline-SVG
+      daily trend line. Bar width % = value ÷ max × 100. Trend coords: x in [50,510],
+      y = 170 - (value ÷ y_max × 142); emit a point in the polyline AND a <circle>.
+    - Secondary-tool donut + Top Content table (donut seg_len = share × 440,
+      seg_offset = running sum of preceding seg_len).
+    - Manual Work Signals — interaction-signal bars + Notable Patterns table +
+      headline signal stats. Tag signals Tier A (named) vs Tier B (raw selector).
+    - Core Workflow Cycle — Current State (N steps) vs Future State (M steps,
+      row-success) side-by-side; the step-count collapse is the hero exec visual.
+    - Session Deep Dive cards — per session: narrative + Pattern/Reps/Time/
+      Automation table + optional friction callout.
+    - Insight callouts — every chart gets a number-anchored takeaway callout.
+  Candidate cards carry BOTH {current_state_description} and
+  {future_state_description}. The per-team Impact Summary includes Min/Event.
+  Team proposal pills use pill-team-{team_order} (color by tab order).
+
+  CONSTRAINT: this deliverable must stay self-contained and Apps Script
+  (HtmlService) friendly — NO external scripts, fonts, or chart libraries. All
+  charts are inline SVG + CSS only. Keep it that way when filling scaffolds.
+
   The CSS below is complete and should be used as-is. The HTML structure
   shows the expected components for each section.
 -->
@@ -82,7 +140,16 @@
     color: white; padding: 60px 32px 48px; text-align: center;
   }
   .hero h1 { font-size: 36px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; }
-  .hero .tagline { font-size: 18px; opacity: 0.85; margin-bottom: 24px; font-weight: 400; }
+  .hero .tagline { font-size: 18px; opacity: 0.85; margin-bottom: 12px; font-weight: 400; }
+  .hero .analysis-window { font-size: 13px; opacity: 0.8; margin: 0 0 20px; font-weight: 400; letter-spacing: 0.2px; }
+  .hero .analysis-window strong { font-weight: 700; }
+  /* Reusable inline window stamp for non-hero tabs */
+  .window-stamp { display: inline-block; font-size: 12px; color: var(--text-secondary); background: var(--bg-alt); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; margin: 8px 0 4px; }
+  .window-stamp strong { color: var(--text); font-weight: 700; }
+  /* Per-team scoping badge */
+  .scope-badge { display: inline-block; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 4px 12px; margin: 4px 0 12px; }
+  .scope-badge-people { background: var(--success-bg); color: #065f46; border: 1px solid var(--success); }
+  .scope-badge-cluster { background: var(--warning-bg); color: #92400e; border: 1px solid var(--warning); }
   .hero-stats { display: flex; justify-content: center; gap: 48px; margin-top: 32px; }
   .hero-stat { text-align: center; }
   .hero-stat-value { font-size: 42px; font-weight: 800; line-height: 1; }
@@ -142,6 +209,7 @@
   .moment-desc { font-size: 13px; font-weight: 600; line-height: 1.4; margin-bottom: 4px; }
   .moment-meta { font-size: 11px; color: var(--text-secondary); }
   .moment-meta .ts { font-weight: 700; color: var(--accent); }
+  .moment-team { margin-left: 8px; }
   .moment-cta { font-size: 12px; color: var(--accent); font-weight: 600; flex-shrink: 0; margin-top: 6px; white-space: nowrap; }
 
   /* Ranked Table */
@@ -203,6 +271,16 @@
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 16px 0; }
   .chart-container { margin: 12px 0; }
   .chart-source { font-size: 11px; color: var(--text-secondary); margin-bottom: 8px; }
+  /* Inline-SVG trend/line chart (no external libs — GAS/HtmlService safe) */
+  .line-chart { width: 100%; max-height: 220px; }
+
+  /* Current → Future process step comparison (side-by-side step tables) */
+  .process-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 12px 0; }
+  .process-compare h3 { font-size: 14px; margin-bottom: 8px; }
+  .process-compare table { margin-top: 0; }
+  .process-compare .step-col-current h3 { color: var(--text-secondary); }
+  .process-compare .step-col-future h3 { color: var(--success); }
+  @media (max-width: 768px) { .process-compare { grid-template-columns: 1fr; } }
 
   /* Cards */
   .card { border: 1px solid var(--border); border-radius: 10px; margin: 16px 0; overflow: hidden; }
@@ -221,6 +299,49 @@
   .pill-info { background: var(--info-bg); color: #1e40af; }
   .pill-warning { background: var(--warning-bg); color: #92400e; }
   .pill-neutral { background: var(--bg-alt); color: var(--text-secondary); }
+
+  /* Info tooltip (hover) — used for "how this metric is calculated" detail */
+  .info-tip {
+    position: relative; display: inline-flex; align-items: center; justify-content: center;
+    width: 15px; height: 15px; margin-left: 6px; border-radius: 50%;
+    background: var(--bg-alt); color: var(--text-secondary);
+    font-size: 10px; font-weight: 700; font-style: normal; cursor: help;
+    border: 1px solid var(--border); vertical-align: middle;
+  }
+  .info-tip .info-tip-body {
+    visibility: hidden; opacity: 0; transition: opacity 0.15s ease;
+    position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+    width: 280px; max-width: 70vw; z-index: 20;
+    background: var(--text-primary); color: #fff; text-align: left;
+    font-size: 12px; font-weight: 400; line-height: 1.5; text-transform: none; letter-spacing: 0;
+    padding: 10px 12px; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    pointer-events: none;
+  }
+  .info-tip .info-tip-body::after {
+    content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+    border: 6px solid transparent; border-top-color: var(--text-primary);
+  }
+  .info-tip:hover .info-tip-body, .info-tip:focus .info-tip-body { visibility: visible; opacity: 1; }
+  .info-tip .info-tip-body code { background: rgba(255,255,255,0.15); color: #fff; padding: 1px 4px; border-radius: 3px; }
+
+  /* Metric role classes (drive both the "Maps To" pill and the role line) */
+  .pill-primary { background: var(--info-bg); color: #1e40af; }
+  .pill-context { background: var(--bg-alt); color: var(--text-secondary); }
+
+  /*
+    Per-team pill colors — used by the Overview ranked table and Key Moments.
+    Markup uses pill-team-{team_order}, where {team_order} matches the tab-order
+    color assignment (1=purple, 2=blue, 3=green, 4=amber). For team 5+, cycle:
+    {team_order} = ((team_index - 1) % 4) + 1.
+  */
+  .pill-team-1 { background: var(--accent-light); color: #4c3ec9; }
+  .pill-team-2 { background: var(--info-bg); color: #1e40af; }
+  .pill-team-3 { background: var(--success-bg); color: #065f46; }
+  .pill-team-4 { background: var(--warning-bg); color: #92400e; }
+
+  /* Role-in-analysis line under a metric's Signal Name */
+  .metric-role { display: block; font-size: 11px; font-weight: 500; color: var(--text-secondary); margin-top: 3px; text-transform: none; letter-spacing: 0; }
+  .metric-role.role-primary { color: #1e40af; }
 
   /* Automation Candidate Cards */
   .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px; }
@@ -430,6 +551,7 @@
 <div class="hero">
   <h1>Workforce Automation Opportunities</h1>
   <p class="tagline">FullStory Workforce Analysis &mdash; {team_count} Business Units, {total_workflows} Automation Candidates</p>
+  <p class="analysis-window">Analysis window: <strong>{analysis_window}</strong> &middot; computed {as_of}</p>
   <div class="hero-stats">
     <div class="hero-stat">
       <div class="hero-stat-value">~{total_hours_saved}</div>
@@ -522,12 +644,13 @@
       {REPEAT:ranked_row}
       One row per automation candidate, sorted by hours saved descending.
       Use rank-num.top3 class for ranks 1-3.
-      Use pill-{team_id} class for the proposal pill.
+      Use pill-team-{team_order} for the proposal pill (team color by tab order;
+      team_order = ((team_index - 1) % 4) + 1).
       Link via switchTab('{team_id}', '{candidate_anchor_id}')
     -->
     <tr>
       <td><span class="rank-num {top3_class}">{rank}</span></td>
-      <td><span class="pill pill-{team_id}">{team_label}</span></td>
+      <td><span class="pill pill-team-{team_order}">{team_label}</span></td>
       <td>{workflow_name}</td>
       <td><span class="pill pill-{level_class}">{automation_level}</span></td>
       <td class="hours" style="text-align:right">{hours_saved}</td>
@@ -559,21 +682,24 @@
     8-10 curated moments from across all teams.
     Select the most visually compelling friction points.
   -->
-  <a href="{session_url}" target="_blank" class="moment-item">
+  <!-- href uses {session_deeplink_url} (…:{absolute_ms}) so "Skip to" jumps to the exact moment -->
+  <a href="{session_deeplink_url}" target="_blank" class="moment-item">
     <div class="moment-num">{moment_number}</div>
     <div class="moment-body">
       <div class="moment-desc">{moment_description}</div>
-      <div class="moment-meta"><span class="ts">&#9654; Skip to {timestamp}</span><span class="moment-team"> &bull; <span class="pill pill-{team_id}">{team_label}</span> &bull; {workflow_name}</span></div>
+      <div class="moment-meta"><span class="ts">&#9654; Skip to {timestamp}</span><span class="moment-team"> &bull; <span class="pill pill-team-{team_order}">{team_label}</span> &bull; {workflow_name}</span></div>
     </div>
     <div class="moment-cta">Watch &rarr;</div>
   </a>
   <!-- {/REPEAT} -->
 </div>
 
+<p style="color:var(--text-secondary);font-size:12px;margin-top:12px;text-align:center;">Each team blueprint contains additional timestamped evidence clips embedded within every automation candidate card.</p>
+
 <hr class="divider">
 
 <p class="footer">
-  <strong>FullStory Workforce Automation Analysis</strong> &mdash; Org {org_id} &mdash; {date_range}<br>
+  <strong>FullStory Workforce Automation Analysis</strong> &mdash; Org {org_id} &mdash; {analysis_window} (computed {as_of})<br>
   {total_page_views} total page views analyzed &bull; {session_count} session deep dives &bull; ~{total_observed_hours} hours of observed employee behavior<br><br>
   Prepared by FullStory Solutions Engineering
 </p>
@@ -592,6 +718,7 @@
 
 <h1>How This Analysis Works</h1>
 <p class="subtitle">A transparent methodology you can verify, challenge, and trust.</p>
+<div class="window-stamp">All figures cover a fixed analysis window: <strong>{analysis_window}</strong> &middot; computed {as_of}. Every linked metric is pinned to this exact window, so the numbers here match what you see in FullStory.</div>
 
 <div class="method-steps">
   <div class="method-step">
@@ -782,7 +909,14 @@
 <div class="section-nav"><button onclick="switchTab('overview')">&larr; Back to Overview</button></div>
 
 <h1>{team_name} Automation Blueprint</h1>
-<p class="subtitle">FullStory Workforce Data &mdash; {time_range} &mdash; {tools_analyzed} + {session_count_team} Session Deep Dives</p>
+<p class="subtitle">FullStory Workforce Data &mdash; {tools_analyzed} + {session_count_team} Session Deep Dives</p>
+<div class="window-stamp">Analysis window: <strong>{analysis_window}</strong> &middot; computed {as_of}</div>
+<!--
+  Scoping badge: emit ONE of the two below.
+  - people-scoped: scope-badge-people, name the segment + member count
+  - tool-cluster:  scope-badge-cluster (inferred)
+-->
+<span class="scope-badge scope-badge-{scope_class}">{scope_label}</span>
 
 <!-- Executive Callout -->
 <div class="callout callout-info">
@@ -791,28 +925,287 @@
 
 <hr class="divider">
 
-<!-- Tool Volume Breakdown -->
-<h2>{volume_section_title}</h2>
-<div class="stats-grid stats-{tool_count}">
-  <!-- One stat card per tool: page views, users, active time -->
+<!--
+  Cross-Tool Time Distribution (PEOPLE-SCOPED teams only — omit for tool-cluster).
+  The headline "where this team's day goes" view: the team's members' time/page
+  views across their ENTIRE stack (Phase 1.1A, segment-scoped DIMENSION_URL_HOST).
+  Use bar-row or donut components.
+-->
+<h2>Where {team_name}'s Time Goes</h2>
+<p class="section-subtitle">Distribution of this team's <strong>engaged time</strong> (FullStory <code>Page focused time (new)</code> — focused/foreground time, including reading &amp; reviewing) across all hosts they touch, scoped to team members.</p>
+<div class="two-col">
+  <!-- donut-container or bar-row chart of host → % of team engaged (focused) time -->
+</div>
+<div class="callout callout-info" style="margin-top:12px">
+  <strong>Primary tool ({primary_tool}):</strong> {primary_tool_adoption_html}
+  <!--
+    Include BOTH (Phase 1.1C):
+    - Adoption: "{team_name} accounts for {pct}% of all {primary_tool} traffic."
+    - Work-type ratio: active ÷ focused = {ratio} → "{input-heavy|read/review-heavy}",
+      which points toward {auto-populate | AI-assist} style automations.
+  -->
 </div>
 
 <hr class="divider">
 
-<!-- URL Path Analysis — where time goes within each tool -->
-<!-- Use bar-row components for horizontal bar charts -->
-<!-- Use donut-container for distribution charts -->
-<!-- Use two-col layout to show charts side by side -->
+<!-- Tool Volume Breakdown -->
+<h2>{volume_section_title}</h2>
+<p class="section-subtitle">A per-tool profile of {team_name}'s stack on three dimensions. Hover the <span class="info-tip" style="cursor:default">i</span> on any card for how to read it.</p>
+<div class="callout callout-info">
+  <strong>How to read these cards — three dimensions per tool:</strong>
+  <ul style="margin:8px 0 0; padding-left:20px">
+    <li><strong>Page views (by path)</strong> → <em>what</em> they do inside the tool: which screens/objects/views get the most traffic. High-traffic paths are where repetitive workflows live.</li>
+    <li><strong>Unique users</strong> → <em>breadth</em>: how many people a workflow touches. This scales the ROI — automating something 200 people do beats something 3 people do.</li>
+    <li><strong>Engaged time (focused)</strong> → <em>depth</em>: engaged hours the tool consumes (FullStory <code>Page focused time (new)</code>, which counts reading &amp; reviewing, not just clicking).</li>
+  </ul>
+  <span style="display:block;margin-top:8px">{volume_scope_note}<!-- e.g. "Scoped to {team_name} members (segment)." OR "Tool-cluster scope: counts all users of these tools, not a confirmed team roster." --></span>
+</div>
+<div class="stats-grid stats-{tool_count}">
+  <!--
+    One stat card per tool. Reuse the ⓘ tooltip (info-tip) on each stat label
+    for per-metric interpretation. Example card:
+    <div class="stat">
+      <div class="stat-value">{tool_page_views}</div>
+      <div class="stat-label">{tool_name} Page Views<span class="info-tip" tabindex="0">i<span class="info-tip-body">What they do inside {tool_name}: top paths reveal the most-used screens/objects.</span></span></div>
+    </div>
+    Show page views, users, engaged time (focused) per tool. Primary tool also:
+    active time + active/focused ratio (input-heavy vs read/review-heavy).
+  -->
+</div>
 
 <hr class="divider">
 
-<!-- Behavioral Signal Analysis (if applicable) -->
-<!-- Copy-paste counts, field changes, manual data entry, etc. -->
+<!--
+  WHERE TIME GOES — per-tool path breakdown (from Phase 1.1 path data).
+  Build ONE of these bands for each major tool in the team's stack (primary
+  tool first). Left = horizontal bar breakdown of top paths; right = a daily
+  trend line for the tool. Both are populated examples — replace the numbers,
+  labels, and SVG point coordinates with real values. Always anchor each chart
+  with a number-driven insight callout below it.
+
+  Bar widths: width % = value ÷ max(value in this chart) × 100. For small bars,
+  drop the inside .bar-val and use the outside .bar-val-outside label instead.
+-->
+<h2>Where Time Goes: {primary_tool}</h2>
+<p class="section-subtitle">{tool_total_views} page views across {tool_path_count} distinct paths. The top paths are where repetitive, automatable workflows live.</p>
+
+<div class="two-col">
+  <div>
+    <h3>Top Paths by Volume</h3>
+    <p class="chart-source">Source: FullStory page views on {primary_tool_host}, by URL path</p>
+    <!-- {REPEAT:path_bar} — ranked desc; first row is the 100%-width baseline -->
+    <div class="bar-row"><span class="bar-label">{path_label}</span><div class="bar-track"><div class="bar-fill" style="width:{path_pct}%;background:{path_color}"><span class="bar-val">{path_views}</span></div></div></div>
+    <!-- {/REPEAT} -->
+  </div>
+  <div>
+    <h3>{primary_tool} Daily Usage</h3>
+    <p class="chart-source">Source: FullStory page views on {primary_tool_host}, daily over the analysis window</p>
+    <!--
+      Inline-SVG line chart. Replace the polyline/circle point coordinates and
+      the y-axis labels with real data. Coordinate system: x ∈ [50,510],
+      y ∈ [28 (max) .. 170 (zero)]. y = 170 − (value ÷ y_max × 142).
+      Emit one "x,y" pair per day in BOTH the polyline points and as a <circle>.
+    -->
+    <div class="chart-container">
+      <svg viewBox="0 0 520 200" class="line-chart">
+        <line x1="40" y1="170" x2="510" y2="170" stroke="#e2e8f0" stroke-width="1"/>
+        <line x1="40" y1="127" x2="510" y2="127" stroke="#e2e8f0" stroke-width="0.5" stroke-dasharray="4"/>
+        <line x1="40" y1="85" x2="510" y2="85" stroke="#e2e8f0" stroke-width="0.5" stroke-dasharray="4"/>
+        <line x1="40" y1="42" x2="510" y2="42" stroke="#e2e8f0" stroke-width="0.5" stroke-dasharray="4"/>
+        <text x="35" y="174" text-anchor="end" font-size="9" fill="#94a3b8">0</text>
+        <text x="35" y="131" text-anchor="end" font-size="9" fill="#94a3b8">{y_label_1}</text>
+        <text x="35" y="89" text-anchor="end" font-size="9" fill="#94a3b8">{y_label_2}</text>
+        <text x="35" y="46" text-anchor="end" font-size="9" fill="#94a3b8">{y_label_3}</text>
+        <polyline fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" points="{trend_points}"/>
+        <!-- {REPEAT:trend_dot} --><circle cx="{dot_x}" cy="{dot_y}" r="3" fill="#6c5ce7"/><!-- {/REPEAT} -->
+        <text x="50" y="190" font-size="8" fill="#94a3b8" text-anchor="middle">{date_label_start}</text>
+        <text x="280" y="190" font-size="8" fill="#94a3b8" text-anchor="middle">{date_label_mid}</text>
+        <text x="510" y="190" font-size="8" fill="#94a3b8" text-anchor="middle">{date_label_end}</text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- Number-anchored insight callout: tie a specific figure to its meaning. -->
+<div class="callout callout-warning">
+  <strong>{insight_headline}</strong> {insight_explanation}
+</div>
+
+<!--
+  OPTIONAL secondary-tool distribution: donut + Top Content table side by side.
+  Use for a tool where a categorical split (or a top-N content list) tells the
+  story better than a path bar (e.g. BI dashboards, call libraries). Donut
+  stroke math: stroke-dasharray="{seg_len} 440", stroke-dashoffset="-{cumulative}",
+  where seg_len = share × 440 (circumference at r=70) and cumulative is the sum
+  of preceding seg_len values.
+-->
+<div class="two-col">
+  <div>
+    <h3>{secondary_tool} Activity Breakdown</h3>
+    <div class="donut-container">
+      <svg viewBox="0 0 200 200" width="180" height="180">
+        <!-- {REPEAT:donut_segment} -->
+        <circle cx="100" cy="100" r="70" fill="none" stroke="{seg_color}" stroke-width="28" stroke-dasharray="{seg_len} 440" stroke-dashoffset="-{seg_offset}" transform="rotate(-90 100 100)"/>
+        <!-- {/REPEAT} -->
+        <circle cx="100" cy="100" r="46" fill="white"/>
+      </svg>
+      <div class="legend">
+        <!-- {REPEAT:donut_legend} -->
+        <div class="legend-item"><div class="legend-dot" style="background:{seg_color}"></div>{seg_label} ({seg_value} / {seg_pct}%)</div>
+        <!-- {/REPEAT} -->
+      </div>
+    </div>
+  </div>
+  <div>
+    <h3>Top {secondary_tool} Content</h3>
+    <table>
+      <thead><tr><th>Content</th><th style="text-align:right">Views</th></tr></thead>
+      <tbody>
+        <!-- {REPEAT:top_content_row} -->
+        <tr><td>{content_label}</td><td style="text-align:right">{content_views}</td></tr>
+        <!-- {/REPEAT} -->
+      </tbody>
+    </table>
+    <p class="chart-source">Source: FullStory page views on {secondary_tool_host}</p>
+  </div>
+</div>
 
 <hr class="divider">
 
-<!-- Session Deep Dive Summaries (if distinctive workflow patterns found) -->
-<!-- Use session-card components to describe each session -->
+<!--
+  BEHAVIORAL SIGNAL ANALYSIS — the manual-work signals from Phase 1.2 (tiered).
+  Show the quantified interaction signals (copy/paste, field changes, submits,
+  search) as bar charts, then a "Notable Patterns" table tying each signal to
+  its implication. Tag each signal's source where relevant (Tier A named event
+  vs Tier B raw selector). Omit this section only if no signals were quantified.
+-->
+<h2>Manual Work Signals</h2>
+<p class="section-subtitle">Interaction events that reveal where the team does work a machine should handle.</p>
+
+<div class="two-col">
+  <div>
+    <h3>{signal_group_1_title}</h3>
+    <p class="chart-source">{signal_group_1_source}</p>
+    <!-- {REPEAT:signal_bar_1} -->
+    <div class="bar-row"><span class="bar-label">{signal_label}</span><div class="bar-track"><div class="bar-fill" style="width:{signal_pct}%;background:{signal_color}"><span class="bar-val">{signal_count}</span></div></div></div>
+    <!-- {/REPEAT} -->
+  </div>
+  <div>
+    <h3>Notable Patterns</h3>
+    <table>
+      <thead><tr><th>Pattern</th><th style="text-align:right">Volume</th><th>Implication</th></tr></thead>
+      <tbody>
+        <!-- {REPEAT:notable_pattern_row} -->
+        <tr><td style="font-weight:600">{pattern_label}</td><td style="text-align:right">{pattern_volume}</td><td style="font-size:12px;color:var(--text-secondary)">{pattern_implication}</td></tr>
+        <!-- {/REPEAT} -->
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Headline manual-signal totals -->
+<div class="stats-grid stats-3">
+  <!-- {REPEAT:signal_stat} -->
+  <div class="stat stat-{signal_stat_class}"><div class="stat-value">{signal_stat_value}</div><div class="stat-label">{signal_stat_label}</div></div>
+  <!-- {/REPEAT} -->
+</div>
+
+<hr class="divider">
+
+<!--
+  Friction & Errors (always-on — from Phase 1.3 discover_groups).
+  Each group is a candidate manual-workaround signal; link its metric_url.
+-->
+<h2>Friction &amp; Errors</h2>
+<p class="section-subtitle">Top frustration and error clusters for this team / its primary tool. A recurring cluster often marks a manual workaround worth automating.</p>
+<table>
+  <thead>
+    <tr><th>Friction / Error Group</th><th>Scope</th><th style="text-align:right">Users / Sessions</th><th>Likely Manual Workaround</th><th>FullStory</th></tr>
+  </thead>
+  <tbody>
+    <!-- {REPEAT:friction_group} -->
+    <tr>
+      <td style="font-weight:600">{friction_label}</td>
+      <td>{friction_scope}</td>
+      <td style="text-align:right">{friction_impact}</td>
+      <td style="font-size:12px;color:var(--text-secondary)">{friction_interpretation}</td>
+      <td><a href="{friction_metric_url}" target="_blank" class="link-arrow">Open</a></td>
+    </tr>
+    <!-- {/REPEAT} -->
+  </tbody>
+</table>
+
+<hr class="divider">
+
+<!--
+  SESSION DEEP DIVE SUMMARIES — one card per Phase 2 session that revealed a
+  distinctive workflow. The pattern table is what makes these compelling:
+  name the loop, how many times it repeated, the per-cycle time, and the
+  automation that removes it. Add a friction callout when the session showed
+  rage/dead clicks or long context-switch pauses. Header pills = session
+  duration + scope (e.g. "Salesforce Only", "Cross-tool").
+-->
+<h2>Session Deep Dives: Observed Workflow Patterns</h2>
+<p class="section-subtitle">{session_count_team} sessions reviewed (~{observed_minutes} min observed) revealing concrete workflow loops.</p>
+
+<!-- {REPEAT:session_pattern_card} -->
+<div class="card session-card">
+  <div class="card-header"><span>{session_title}</span><div class="pills"><span class="pill pill-warning">{session_duration}</span> <span class="pill pill-neutral">{session_scope}</span></div></div>
+  <div class="card-body">
+    <p style="font-size:13px;margin-bottom:12px;">{session_narrative}</p>
+    <table>
+      <thead><tr><th>Pattern</th><th style="text-align:right">Repetitions</th><th>Time / Cycle</th><th>Automation</th></tr></thead>
+      <tbody>
+        <!-- {REPEAT:session_pattern_row} -->
+        <tr><td>{pattern_name}</td><td style="text-align:right">{pattern_reps}</td><td>{pattern_time}</td><td>{pattern_automation}</td></tr>
+        <!-- {/REPEAT} -->
+      </tbody>
+    </table>
+    <!-- Optional friction callout — include only if the session showed friction signals. -->
+    <div class="callout callout-warning" style="margin-top:12px;margin-bottom:0;">{session_friction_note}</div>
+  </div>
+</div>
+<!-- {/REPEAT} -->
+
+<hr class="divider">
+
+<!--
+  CORE WORKFLOW CYCLE — the "before vs after" step comparison. Use this when the
+  team repeats one dominant multi-step cycle (observed in Phase 2). The left
+  column lists every manual step today; the right lists the streamlined steps
+  with automation (row-success highlight). This is the single most persuasive
+  exec visual — the step-count collapse (e.g. 10 → 3) tells the story instantly.
+  Omit the whole card if the team has no single dominant cycle.
+-->
+<div class="card">
+  <div class="card-header">{core_cycle_title} <span class="pill pill-neutral">{cycle_step_delta}</span></div>
+  <div class="card-body">
+    <div class="process-compare">
+      <div class="step-col-current">
+        <h3>Current State &mdash; {current_step_count} manual steps</h3>
+        <table>
+          <thead><tr><th style="width:36px">Step</th><th>Action</th></tr></thead>
+          <tbody>
+            <!-- {REPEAT:current_step} -->
+            <tr><td>{step_num}</td><td>{step_action}</td></tr>
+            <!-- {/REPEAT} -->
+          </tbody>
+        </table>
+      </div>
+      <div class="step-col-future">
+        <h3>Future State &mdash; {future_step_count} steps with automation</h3>
+        <table>
+          <thead><tr><th style="width:36px">Step</th><th>Action</th></tr></thead>
+          <tbody>
+            <!-- {REPEAT:future_step} -->
+            <tr class="row-success"><td>{step_num}</td><td>{step_action}</td></tr>
+            <!-- {/REPEAT} -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
 
 <hr class="divider">
 
@@ -838,14 +1231,23 @@
       <div><div class="detail-label">Signal from Data</div><div class="detail-value">{signal_description}</div></div>
       <div><div class="detail-label">Est. Monthly Savings</div><div class="detail-value">{savings_description}</div></div>
     </div>
+    <!-- Current State = the painful "before" (the manual workflow today). This
+         is the setup that makes the Future State land — keep it concrete. -->
+    <div class="detail-label">Current State</div>
+    <p class="future-state" style="margin-bottom:8px;color:var(--text-secondary)">{current_state_description}</p>
     <div class="detail-label">Future State</div>
     <p class="future-state">{future_state_description}</p>
     <div class="evidence"><div class="evidence-label">Session Evidence</div>{evidence_summary}</div>
-    <!-- Evidence Clips — timestamped session replay links -->
+    <!-- Evidence Clips — deep-linked session replay (jumps straight to the moment) -->
+    <!--
+      {session_deeplink_url} = https://app.fullstory.com/ui/{org-id}/session/{device-id}:{session-id}:{absolute_ms}
+      (appending :{absolute_ms} deep-links to the exact moment — no manual scrubbing).
+      {timestamp} = mm:ss display label. {clip_description} = the note for that moment.
+    -->
     <div class="evidence-clips">
       <div class="evidence-label">Watch It Happen</div>
       <!-- {REPEAT:evidence_clip} -->
-      <a href="{session_url}" target="_blank"><span class="ts">&#9654; {timestamp}</span> {clip_description}</a>
+      <a href="{session_deeplink_url}" target="_blank"><span class="ts">&#9654; {timestamp}</span> {clip_description}</a>
       <!-- {/REPEAT} -->
     </div>
 
@@ -924,10 +1326,23 @@
 <h2>Automation Impact Summary</h2>
 <table>
   <thead>
-    <tr><th>Workflow</th><th>Level</th><th>Monthly Events</th><th>Hours Saved / Month</th><th>Primary Tool</th></tr>
+    <tr><th>Workflow</th><th>Level</th><th style="text-align:right">Monthly Events</th><th style="text-align:right">Min / Event</th><th style="text-align:right">Hours Saved / Month</th><th>Primary Tool</th></tr>
   </thead>
   <tbody>
-    <!-- One row per candidate -->
+    <!--
+      {REPEAT:impact_row} — one row per candidate. Min/Event keeps the
+      events × minutes logic visible at a glance (full math is in each card's
+      audit trail). Use row-success on Fully Automated rows for emphasis.
+    -->
+    <tr class="{impact_row_class}">
+      <td>{workflow_name}</td>
+      <td><span class="pill pill-{level_class}">{automation_level}</span></td>
+      <td style="text-align:right">{monthly_events}</td>
+      <td style="text-align:right">{min_per_event}</td>
+      <td style="text-align:right"><strong>{hours_saved} hrs</strong></td>
+      <td>{primary_tool}</td>
+    </tr>
+    <!-- {/REPEAT} -->
   </tbody>
 </table>
 
@@ -979,8 +1394,21 @@
 
 <hr class="divider">
 
+<!--
+  TOOL-CLUSTER TEAMS ONLY: emit this caveat. OMIT entirely for people-scoped teams.
+-->
+<div class="callout callout-warning">
+  <strong>How this team was scoped:</strong> Groupings for {team_name} are
+  inferred from tool-usage patterns, not a user property. Numbers reflect
+  everyone active in these tools, which may include other departments.
+  Configuring a department/role/team property on the FullStory user object would
+  enable precise, people-grounded numbers for this team in future analyses.
+</div>
+
+<hr class="divider">
+
 <p class="footer">
-  <strong>Data source:</strong> FullStory Workforce MCP &mdash; Org {org_id} &mdash; {date_range}.<br>
+  <strong>Data source:</strong> FullStory Workforce MCP &mdash; Org {org_id} &mdash; {analysis_window} (computed {as_of}).<br>
   {team_data_summary}<br>
   Time estimates use conservative per-event assumptions.<br><br>
   <strong>Prepared by:</strong> FullStory Solutions Engineering &mdash; Workforce Automation Analysis
@@ -1001,20 +1429,31 @@
 
 <h1>Measurement &amp; Proof</h1>
 <p class="subtitle">Baseline metrics, success criteria, and a guide to validating automation impact post-implementation.</p>
+<div class="window-stamp">Baseline analysis window: <strong>{analysis_window}</strong> &middot; computed {as_of}</div>
 
 <div class="callout callout-info">
   <strong>This tab provides everything needed to track and prove ROI.</strong>
-  Each metric below links directly to FullStory. Click the link to name,
-  save, and add it to a dashboard for ongoing monitoring. After
-  implementation, re-run the analysis (Phase 5) or manually re-compute
-  metrics with shifted date ranges to measure impact.
+  Each metric below links directly to FullStory and is pinned to the analysis
+  window above, so clicking a link shows the same baseline value reported here.
+  Use each link to name, save, and add the metric to a dashboard for ongoing
+  monitoring. After implementation, re-run the analysis (Phase 5) or manually
+  re-compute metrics with shifted date ranges to measure impact.
 </div>
 
 <hr class="divider">
 
 <!-- Baseline Metrics Table -->
 <h2>Baseline Metrics</h2>
-<p class="section-subtitle">All key signal metrics from this analysis. Click the FullStory link to view, name, and save each metric for dashboard use.</p>
+<p class="section-subtitle">All key signal metrics from this analysis. Hover the <span class="info-tip" style="cursor:default">i</span> next to a metric to see exactly how it's calculated; the role line under each name says how it's used. Click the FullStory link to view, name, and save each metric for dashboard use.</p>
+
+<div class="callout callout-info">
+  <strong>How to read this table — each metric plays one of two roles:</strong>
+  <ul style="margin:8px 0 0; padding-left:20px">
+    <li><strong>Primary signal</strong> → feeds an opportunity's savings math
+      (<code>monthly volume × time per event × eliminability ÷ 60</code>). These are the numbers the ROI rests on.</li>
+    <li><strong>Baseline context</strong> → frames the size of the problem (total time, users, volume) but is <em>not</em> plugged into any savings calculation.</li>
+  </ul>
+</div>
 
 <table>
   <thead>
@@ -1030,16 +1469,33 @@
   <tbody>
     <!--
       {REPEAT:metric_row}
-      One row per metric from the ledger file.
-      - Signal Name: human-readable label
-      - Suggested Dashboard Name: [{prefix}] {Signal Name}
-      - Maps To: opportunity name (or "Baseline context")
-      - Baseline Value: computed value at time of analysis
-      - Significance: why this metric matters
+      One row per metric from the ledger file. All fields below come from the
+      ledger — no new computation. Compose two derived strings per row:
+
+      - {signal_name}: human-readable label (ledger Signal Name)
+      - {metric_calc}: HOW IT'S CALCULATED — one sentence assembled from the
+        ledger's Output Type + Query + Window + Segment ID + Time Property, e.g.
+        "Single number — total Page focused time (new) where URL domain contains
+         zendesk.com, scoped to seg-123 (department=Support), Apr 1–30 2026."
+        Goes in the ⓘ tooltip.
+      - {role_class}: "primary" if this is a Primary signal, else "context"
+        (drives both the pill color (pill-primary/pill-context) and the
+        role-line color (role-primary/role-context)).
+      - {maps_to}: short pill label — opportunity name, or "Baseline context".
+      - {metric_role}: HOW IT'S USED — one always-visible sentence from the
+        ledger Blueprint Role. Primary signal → name the calc it feeds, e.g.
+        "Drives hours-saved for #1 Response Assembly." Baseline context →
+        "Frames total support time; not in a savings calc."
+      - {dashboard_name}: [{prefix}] {Signal Name}
+      - {baseline_value}: computed value at time of analysis
+      - {significance}: why this metric matters
       - FullStory Link: https://app.fullstory.com/ui/{org_id}/metrics/create/{metric_id}
     -->
     <tr>
-      <td style="font-weight:600">{signal_name}</td>
+      <td style="font-weight:600">
+        {signal_name}<span class="info-tip" tabindex="0">i<span class="info-tip-body">{metric_calc}</span></span>
+        <span class="metric-role role-{role_class}">{metric_role}</span>
+      </td>
       <td><code>{dashboard_name}</code></td>
       <td><span class="pill pill-{role_class}">{maps_to}</span></td>
       <td class="hours" style="text-align:right">{baseline_value}</td>
@@ -1181,7 +1637,7 @@
 <hr class="divider">
 
 <p class="footer">
-  <strong>FullStory Workforce Automation Analysis</strong> &mdash; Org {org_id} &mdash; {date_range}<br>
+  <strong>FullStory Workforce Automation Analysis</strong> &mdash; Org {org_id} &mdash; {analysis_window} (computed {as_of})<br>
   Metric ledger prefix: <code>{prefix}</code><br><br>
   Prepared by FullStory Solutions Engineering
 </p>

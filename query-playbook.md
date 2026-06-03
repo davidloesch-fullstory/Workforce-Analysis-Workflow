@@ -19,17 +19,31 @@ backfilled during Phase 3 synthesis.
 
 ### Tool Inventory Discovery
 
+Goal: the COMPLETE host list (see SKILL.md Phase 0.1 for the full procedure).
+Force the host dimension, beat the 50-row cap with a raw high-limit definition,
+then verify coverage. Keep ALL hosts (including auth/SSO, CDN, internal).
+
 ```
 build_metric:
-  query: "page views grouped by top-level URL domain"
+  query: "page views grouped by URL host"
   output_type: top_n
-  time_range: last_30_days
-→ compute_metric(metric_id)
-→ ledger: Signal="Tool Inventory (by domain)", Role="Baseline context"
+  start_date: {analysis_start}   # absolute window from Phase 0.0
+  end_date:   {analysis_end}     # never use time_range for persisted metrics
+→ verify definition: dimension.builtInProperty == "DIMENSION_URL_HOST"
+   (if it came back DIMENSION_URL, update_metric refinement:
+    "group by URL host instead of the full URL")
+→ compute_metric via metric_definition escape hatch with limit raised to 200
+   (the default 50 is a UI/builder cap; the server honors higher limits)
+→ coverage check: sum(returned rows) ÷ result.total × 100
+   (100% = complete; if rows == limit and < 100%, raise limit or paginate)
+→ ledger: Signal="Tool Inventory (by host)", Role="Baseline context",
+          note coverage % and that an unnamed metric was created
 ```
 
-Result: ranked list of every domain with captured activity. Use this to
-identify the org's tool stack.
+Result: the full list of hosts with captured activity. Collapse to registrable
+domain for the human-facing inventory (keep raw hosts too). Note: the saved
+metric's FullStory link renders only the top 50 rows (UI cap) — add a
+tooltip/footnote when linking it.
 
 ### User Context Discovery
 
@@ -45,61 +59,152 @@ represent team, department, role, title, region, tenure, or similar.
 Properties with recognizable names and human-readable values are useful.
 Ignore opaque internal data (hashed IDs, system codes, nested objects).
 
-If team/department/role-equivalent properties exist, use them to build
-user segments:
+Enumerate the property's distinct **values** (read from the schema sample +
+confirm with the user — there is no "list all values" tool). Lock a
+`{team → property=value}` mapping and a per-team scoping mode (people-scoped vs
+tool-cluster).
+
+For each **people-scoped** team, build a membership segment pinned to the window:
 
 ```
 build_segment:
-  query: "users where {property_name} equals {team_value}"
-  name: "{Team Name} Users"
-→ Use these segments to scope Phase 1 metrics per team
+  query: "users where {property_name} = {team_value}"
+  name:  "{prefix} {Team Name} Members"
+  start_date: {analysis_start}   # pin to the Phase 0.0 window
+  end_date:   {analysis_end}
+→ ledger Segments table: Segment ID, Team, "{property}={value}", Window, "people-scoped"
 ```
 
 ### Per-Tool Volume Baseline
 
-For each relevant domain discovered above:
+For each relevant domain. People-scoped teams attach the team segment so the
+numbers reflect the team's members; tool-cluster teams leave metrics URL-scoped.
 
 ```
+# Build the metric (WHAT), then for people-scoped teams attach segment (WHO):
 build_metric:
   query: "page views grouped by URL path where URL domain contains {domain}"
   output_type: top_n
+  start_date: {analysis_start}    # always pin the window
+  end_date:   {analysis_end}
+→ (people-scoped) update_metric(metric_id, segment_id={team_segment})  # new metric_id
 → compute_metric(metric_id)
-→ ledger: Signal="{Domain} Page Views (by path)", Role="Baseline context"
+→ ledger: Signal="{Domain} Page Views (by path)", Segment ID={team_segment|blank}, Role="Baseline context"
 
-build_metric:
-  query: "total active time where URL domain contains {domain}"
-  output_type: single_number
-→ compute_metric(metric_id)
-→ ledger: Signal="{Domain} Active Time", Role="Baseline context"
-
-build_metric:
-  query: "unique users where URL domain contains {domain}"
-  output_type: single_number
-→ compute_metric(metric_id)
-→ ledger: Signal="{Domain} Unique Users", Role="Baseline context"
+# focused (engaged) time — NL maps "focused" → active, so clone-and-swap:
+build_metric: "total Page active time (new) where URL domain contains {domain}" (single_number)
+→ (people-scoped) update_metric(..., segment_id)
+→ clone returned metric_definition, set property.builtInProperty=28, compute_metric(metric_definition)
+build_metric: "unique users where URL domain contains {domain}" (single_number)
+→ (people-scoped) update_metric(..., segment_id) → compute_metric
 ```
 
-### Org Context Discovery
+Use **engaged time = `Page focused time (new)`** as the primary measure — it
+counts focused/foreground attention incl. reading and reviewing, which `Page
+active time (new)` (interaction only) undercounts. **Measure focused time ONLY
+via the clone-and-swap escape hatch** (`builtInProperty: 28`); the NL builder
+silently maps "focused" → active. Enums (event node `visitedPage`, agg
+`NUMERIC_AGGREGATION_METHOD_SUM`): focused = `28` (numeric), active =
+`"NUMERIC_PROPERTY_PAGEVIEW_ACTIVE_DURATION"`, visible =
+`"NUMERIC_PROPERTY_PAGEVIEW_TOTAL_DURATION"`. Verify visible ≥ focused ≥ active.
 
-After identifying the tools, search for defined events and named elements:
+**Cross-tool team view (people-scoped, headline):** take the `DIMENSION_URL_HOST`
+breakdown from Tool Inventory Discovery, swap its aggregated property to focused
+(`builtInProperty: 28`) via the escape hatch, attach the team segment, and
+compute → the team's full focused-time distribution across their entire stack.
 
+**Primary tool only — adoption + work-type ratio (people-scoped):**
+```
+# active time on the primary tool via NL (maps correctly), unscoped + team-scoped:
+build_metric: "total Page active time (new) where URL domain contains {primary_domain}" (single_number)
+# focused = SAME definition with property.builtInProperty=28 (clone-and-swap):
+→ compute_metric(metric_definition with builtInProperty=28)   # engaged hours
+# adoption: team-scoped focused ÷ tool-only focused = team share ("Support = 80% of all Zendesk")
+# work-type ratio: active ÷ focused → high = input-heavy (auto-populate), low = read-heavy (AI-assist)
+```
+
+### Friction & Error Discovery (always-on)
+
+Surface manual-workaround signals via top frustration/error groups:
+
+```
+# people-scoped team:
+discover_groups(segment_id={team_segment}, limit=5,
+                start_time={analysis_start}, end_time={analysis_end})
+# primary tool (any team):
+discover_groups(domain={primary_tool_host}, limit=5,
+                start_time={analysis_start}, end_time={analysis_end})
+```
+
+Capture each group + its `metric_url` as candidate evidence for Phase 3.
+
+### Interaction Signals (tiered — see SKILL.md Phase 1.2)
+
+Quantify manual-work signals (copy/paste, submissions, field changes, search,
+workflow clicks). **Names are hints, raw behavior is truth** — never depend on
+clean instrumentation. Work down the tiers; for people-scoped teams attach the
+team segment to every metric.
+
+**Tier A — Semantic (if present).** Search for defined events / named elements:
 ```
 discover_org_context:
   queries: ["{tool1_name}", "{tool2_name}", "copy", "paste", "submit",
             "click", "field", "search", "ticket", "deal", "task"]
+# For each relevant hit → build_metric(single_number) → compute. PROVISIONAL
+# until validated against Tier B.
 ```
 
-Adapt the queries based on what tools were discovered. The goal is to find
-org-specific instrumentation that provides richer signals than raw page views.
+**Tier B — Raw aggregate (always available, naming-independent).** Reproduce the
+same signals from autocaptured events. Use the `metric_definition` escape hatch
+to pin the raw event type if the NL layer mis-maps.
+```
+# workflow/button clicks → raw selector paths (CAP top ~15–20 by frequency)
+build_metric: "clicks grouped by element where URL domain contains {domain}" (top_n)
+# field population / data entry
+build_metric: "change events where URL domain contains {domain}" (single_number)
+# form submissions
+build_metric: "clicks on submit elements where URL domain contains {domain}" (single_number)
+#   (or build_funnel: "... then submitted the form")
+# search/lookup → navigations to the search path (from the 1.1 path breakdown)
+build_metric: "page views where URL path contains search AND URL domain contains {domain}" (single_number)
+# frustration proxy → reuse Phase 1.3 discover_groups (rage/dead/error); do not rebuild
+# unnamed pages are fine: get_pages returns learned pages; URL paths need no names
+```
+Cross-check A vs B; on material divergence, **trust B** and note it. Keep B
+bounded (few signal types per team, selectors capped).
+
+**Tier C — Ground-truth confirmation (automatic, reuse-only).** Don't read
+transcripts here. Emit a **confirm-list** (raw selector/event + frequency + tool
++ question) for any high-frequency signal whose *meaning* is ambiguous, and hand
+it to Phase 2.2 — its `session-context` subagent already reads the transcript, so
+confirmation rides along at ~0 marginal cost. Empty confirm-list (clean org) →
+Tier C does nothing.
 
 ---
 
-## Customer Support Team
+# Team Archetype Patterns (reference library — select & adapt per confirmed team)
+
+The sections below are **not a fixed roster of teams to run.** They are a
+reference library of query patterns indexed by team *function*. The actual teams
+— their **names and count** — come from the user's Phase 0.4 confirmation
+(validated user-property values or tool-cluster groupings).
+
+**How to use this library:**
+1. Run **exactly one pass per team confirmed in Phase 0.4** — no more, no fewer.
+2. For each confirmed team, pick the archetype below whose **function** is
+   closest, and **adapt its queries to that team's actual tools** (from the
+   Phase 0.1 inventory). The tool names in each archetype are examples.
+3. If a confirmed team matches **no** archetype (e.g., Claims Adjusters, Clinical
+   Coders, Trust & Safety), use the **Custom / Other Team** archetype below —
+   which is just the Universal Queries + "Adapting to Unknown Tools" pattern.
+4. Always use the **user-confirmed team name** for labels/ledger/deliverable —
+   never the archetype's example name.
+
+---
+
+## Archetype: Customer Support (example)
 
 Primary tools: Zendesk, Intercom, Freshdesk, ServiceNow, or similar.
-
-**Note**: Team names in this playbook are examples. Use the actual team
-name confirmed by the user in Phase 0.5.
 
 ### Volume Queries
 
@@ -166,8 +271,20 @@ build_metric:
 
 ### Session Selection
 
+This pattern applies to **every** team. People-scoped teams should select by
+segment (the right people in the tool); tool-cluster teams select by metric.
+
 ```
-# Find sessions with high activity in the support tool
+# PEOPLE-SCOPED (preferred): intersected who+what segment → the team's members
+# actually working in the tool
+build_segment:
+  query: "users where {property}={value} who visited {support_tool_domain}"
+  start_date: {analysis_start}
+  end_date:   {analysis_end}
+→ get_sessions(segment_id, limit=10)
+# (or reuse the 0.4.2 membership segment for a whole-day, cross-tool view)
+
+# TOOL-CLUSTER (fallback): anyone active in the support tool
 build_metric:
   query: "page views where URL domain contains {support_tool_domain}"
   output_type: single_number
@@ -188,7 +305,7 @@ build_metric:
 
 ---
 
-## Sales Operations Team
+## Archetype: Sales Operations (example)
 
 Primary tools: SFDC, Outreach/Salesloft, Gong/Chorus, ZoomInfo, Clay, LinkedIn.
 
@@ -270,7 +387,7 @@ build_metric:
 
 ---
 
-## RevOps / Deal Desk Team
+## Archetype: RevOps / Deal Desk (example)
 
 Primary tools: SFDC (reports, dashboards, CPQ), Looker/Tableau, Gong.
 
@@ -357,7 +474,7 @@ build_metric:
 
 ---
 
-## Engineering Ops Team
+## Archetype: Engineering Ops (example)
 
 Primary tools: Jira, Linear, GitHub, Confluence, CI/CD dashboards.
 
@@ -384,7 +501,7 @@ build_metric:
 
 ---
 
-## Marketing Ops Team
+## Archetype: Marketing Ops (example)
 
 Primary tools: HubSpot, Marketo, LinkedIn Ads, Drift, analytics dashboards.
 
@@ -404,6 +521,50 @@ build_metric:
 - Reporting assembly: pulling data from multiple tools for performance reports
 - List management: manual list building, deduplication, segmentation
 - Content publishing workflows: multi-step approval/publishing processes
+
+---
+
+## Archetype: Custom / Other Team (use when no archetype above fits)
+
+For any confirmed team whose function doesn't match the archetypes above (e.g.,
+Claims Adjusters, Clinical Coders, Trust & Safety, Underwriting, Logistics). Do
+not force-fit it into an existing archetype — build the pass from the universal
+patterns instead.
+
+### Volume Queries
+
+```
+# Per-tool path breakdown for each domain in the team's stack (from Phase 0.1):
+build_metric:
+  query: "page views grouped by URL path where URL domain contains {domain}"
+  output_type: top_n
+  start_date: {analysis_start}
+  end_date:   {analysis_end}
+→ (people-scoped) update_metric(..., segment_id={team_segment}) → compute_metric
+# Plus the Universal "Per-Tool Volume Baseline" trio: focused time, unique users.
+```
+
+### Interaction Signal Queries
+
+```
+# Derive probe terms from the team's actual tools + the generic manual-work verbs:
+discover_org_context(queries=["{tool1_name}", "{tool2_name}", "copy", "paste",
+                              "submit", "field", "search", "export", "approve"])
+# For each relevant defined event found, build a single_number count metric.
+```
+
+### Session Selection
+
+Use the Universal "Session Selection" pattern (people-scoped → intersected
+who+what segment; tool-cluster → metric_id), substituting the team's primary
+tool domain.
+
+### What to Look For in Sessions
+
+The tool-agnostic checklist applies to any team: repetitive data entry,
+copy-paste chains between tools, cross-tool context switching (long pauses),
+duplicate lookups, manual report/status assembly, and auth/SSO friction. Let the
+session reveal the workflow regardless of whether you recognize the tools.
 
 ---
 
@@ -428,10 +589,10 @@ During Phase 3 synthesis, revisit every row in the metric ledger and
 update the "Blueprint Role" and "Significance" columns:
 
 ```markdown
-| Metric ID | Query | Output Type | Signal Name | Blueprint Role | Significance | Baseline Value |
-|-----------|-------|-------------|-------------|----------------|--------------|----------------|
-| m-abc123  | count of Copied Comment Log events | single_number | Copied Comment Log | Primary signal for #1 Response Assembly | Directly measures copy-paste volume that AI drafting eliminates | 2,847 |
-| m-def456  | total active time where domain contains zendesk | single_number | Zendesk Active Time | Baseline context | Frames total support tool time investment | 412h |
+| Metric ID | Query | Output Type | Window | Segment ID | Time Property | Signal Name | Blueprint Role | Significance | Baseline Value |
+|-----------|-------|-------------|--------|------------|---------------|-------------|----------------|--------------|----------------|
+| m-abc123  | count of Copied Comment Log events | single_number | 2026-04-01–2026-04-30 | seg-supp | N/A | Copied Comment Log | Primary signal for #1 Response Assembly | Directly measures copy-paste volume that AI drafting eliminates | 2,847 |
+| m-def456  | SUM focused time (builtInProperty 28, escape hatch) where domain contains zendesk | single_number | 2026-04-01–2026-04-30 | seg-supp | focused | Zendesk Engaged Time | Baseline context | Frames total support tool time investment | 412h |
 ```
 
 For each metric, add a suggested FullStory dashboard name:

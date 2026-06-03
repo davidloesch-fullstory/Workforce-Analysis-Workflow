@@ -273,8 +273,9 @@ Before finalizing candidates, verify:
 - [ ] No double-counting: if two candidates share the same event pool,
       split the volume (don't count it twice)
 - [ ] Implementation complexity accounts for the org's current tech maturity
-- [ ] The total hours saved passes a sanity check against total active time
-      (savings shouldn't exceed the team's total working hours)
+- [ ] The total hours saved passes a sanity check against total engaged
+      (focused) time — `Page focused time (new)` — (savings shouldn't exceed
+      the team's total working hours)
 - [ ] Every primary signal metric has a validation status in the audit trail
 - [ ] Every time-per-event estimate cites its source (session or default)
 - [ ] Every eliminability percentage includes a written rationale
